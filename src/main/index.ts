@@ -25,7 +25,7 @@ interface Settings {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
-  viewMode: 'verse' | 'chapter'
+  viewMode: 'verse' | 'chapter' | 'focus'
   responsiveReadingColors: { leader: string; congregation: string; unison: string }
 }
 

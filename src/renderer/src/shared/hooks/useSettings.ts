@@ -16,7 +16,7 @@ export interface SettingsState {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
-  viewMode: 'verse' | 'chapter'
+  viewMode: 'verse' | 'chapter' | 'focus'
   responsiveReadingColors: ResponsiveReadingColors
   systemFonts: string[]
 }

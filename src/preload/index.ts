@@ -91,7 +91,7 @@ const initialSettings = ipcRenderer.sendSync('settings:getSync') as {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
-  viewMode: 'verse' | 'chapter'
+  viewMode: 'verse' | 'chapter' | 'focus'
   responsiveReadingColors: { leader: string; congregation: string; unison: string }
 }
 
@@ -109,7 +109,7 @@ const settingsApi = {
     headerFontSize?: number
     headerPaddingY?: number
     headerAlign?: 'left' | 'center' | 'right'
-    viewMode?: 'verse' | 'chapter'
+    viewMode?: 'verse' | 'chapter' | 'focus'
   }) => ipcRenderer.invoke('settings:set', settings)
 }
 

@@ -140,7 +140,7 @@ function App() {
 
   // 보기 모드 변경 핸들러
   const handleViewModeChange = useCallback(
-    async (mode: 'verse' | 'chapter') => {
+    async (mode: 'verse' | 'chapter' | 'focus') => {
       setViewMode(mode)
       // 설정에 저장
       updateSettings({ viewMode: mode })
