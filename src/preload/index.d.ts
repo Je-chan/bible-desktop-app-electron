@@ -8,8 +8,17 @@ interface SearchResult {
 }
 
 interface BibleApi {
-  getVerse: (version: string, book: number, chapter: number, verse: number) => Promise<string | null>
-  getChapter: (version: string, book: number, chapter: number) => Promise<Array<{ verse: number; text: string }>>
+  getVerse: (
+    version: string,
+    book: number,
+    chapter: number,
+    verse: number
+  ) => Promise<string | null>
+  getChapter: (
+    version: string,
+    book: number,
+    chapter: number
+  ) => Promise<Array<{ verse: number; text: string }>>
   getMaxVerse: (version: string, book: number, chapter: number) => Promise<number>
   search: (
     version: string,
@@ -19,7 +28,30 @@ interface BibleApi {
     limit?: number,
     offset?: number
   ) => Promise<SearchResult[]>
-  searchCount: (version: string, keywords: string[], startBook?: number, endBook?: number) => Promise<number>
+  searchCount: (
+    version: string,
+    keywords: string[],
+    startBook?: number,
+    endBook?: number
+  ) => Promise<number>
+  countVersesInRange: (
+    version: string,
+    startBook: number,
+    startChapter: number,
+    startVerse: number,
+    endBook: number,
+    endChapter: number,
+    endVerse: number
+  ) => Promise<number>
+  getVerseIndexInRange: (
+    version: string,
+    bookNumber: number,
+    chapter: number,
+    verse: number,
+    startBook: number,
+    startChapter: number,
+    startVerse: number
+  ) => Promise<number>
 }
 
 interface Settings {
@@ -32,6 +64,8 @@ interface Settings {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter'
+  responsiveReadingColors: { leader: string; congregation: string; unison: string }
 }
 
 interface SettingsApi {

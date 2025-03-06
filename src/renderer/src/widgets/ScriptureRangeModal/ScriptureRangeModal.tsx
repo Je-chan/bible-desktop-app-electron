@@ -18,9 +18,10 @@ export const ScriptureRangeModal = ({
   onSave,
   onClose
 }: ScriptureRangeModalProps) => {
-  const [rangeEnabled, setRangeEnabled] = useState(!!todayScriptureRange)
   const [startBookAbbr, setStartBookAbbr] = useState(todayScriptureRange?.start.bookAbbr || '')
-  const [startChapter, setStartChapter] = useState(todayScriptureRange?.start.chapter.toString() || '')
+  const [startChapter, setStartChapter] = useState(
+    todayScriptureRange?.start.chapter.toString() || ''
+  )
   const [startVerse, setStartVerse] = useState(todayScriptureRange?.start.verse.toString() || '')
   const [endBookAbbr, setEndBookAbbr] = useState(todayScriptureRange?.end.bookAbbr || '')
   const [endChapter, setEndChapter] = useState(todayScriptureRange?.end.chapter.toString() || '')
@@ -40,14 +41,15 @@ export const ScriptureRangeModal = ({
   // 시작 범위가 완전히 설정되었는지 확인
   const isStartComplete = () => {
     const book = BIBLE_BOOKS.find((b) => b.abbr === startBookAbbr)
-    return book && startChapter && startVerse && parseInt(startChapter) > 0 && parseInt(startVerse) > 0
+    return (
+      book && startChapter && startVerse && parseInt(startChapter) > 0 && parseInt(startVerse) > 0
+    )
   }
 
   // 모달이 열릴 때 저장된 값으로 초기화
   useEffect(() => {
     if (isOpen) {
       // 저장된 todayScriptureRange 값으로 복원
-      setRangeEnabled(!!todayScriptureRange)
       setStartBookAbbr(todayScriptureRange?.start.bookAbbr || '')
       setStartChapter(todayScriptureRange?.start.chapter.toString() || '')
       setStartVerse(todayScriptureRange?.start.verse.toString() || '')
@@ -60,9 +62,7 @@ export const ScriptureRangeModal = ({
 
       // 포커스
       setTimeout(() => {
-        if (todayScriptureRange) {
-          startBookRef.current?.focus()
-        }
+        startBookRef.current?.focus()
       }, 100)
     }
   }, [isOpen, todayScriptureRange])
@@ -91,13 +91,12 @@ export const ScriptureRangeModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown, true)
   }, [isOpen])
 
-  const handleSave = async () => {
-    if (!rangeEnabled) {
-      onSave(null)
-      onClose()
-      return
-    }
+  const handleClear = () => {
+    onSave(null)
+    onClose()
+  }
 
+  const handleSave = async () => {
     setErrors({})
 
     const startBook = BIBLE_BOOKS.find((b) => b.abbr === startBookAbbr)
@@ -178,7 +177,10 @@ export const ScriptureRangeModal = ({
     onClose()
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, nextRef?: React.RefObject<HTMLInputElement | HTMLButtonElement | null>) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    nextRef?: React.RefObject<HTMLInputElement | HTMLButtonElement | null>
+  ) => {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (nextRef?.current) {
@@ -186,13 +188,6 @@ export const ScriptureRangeModal = ({
       } else {
         handleSave()
       }
-    }
-  }
-
-  const handleCheckboxKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      setRangeEnabled(!rangeEnabled)
     }
   }
 
@@ -207,7 +202,10 @@ export const ScriptureRangeModal = ({
   const endDisabled = !isStartComplete()
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={handleClose}
+    >
       <div className="bg-white rounded-lg shadow-xl w-96 p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">본문 말씀 범위</h2>
@@ -231,23 +229,7 @@ export const ScriptureRangeModal = ({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="rangeEnabled"
-              checked={rangeEnabled}
-              onChange={(e) => setRangeEnabled(e.target.checked)}
-              onKeyDown={handleCheckboxKeyDown}
-              className="w-4 h-4"
-            />
-            <label htmlFor="rangeEnabled" className="text-sm font-medium text-slate-700">
-              본문 말씀 범위 사용
-            </label>
-          </div>
-
-          {rangeEnabled && (
-            <div className="space-y-4">
-              {/* 시작 */}
+          {/* 시작 */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">시작</label>
                 {(errors['start.chapter'] || errors['start.verse']) && (
@@ -297,7 +279,9 @@ export const ScriptureRangeModal = ({
 
               {/* 끝 */}
               <div>
-                <label className={`block text-sm font-medium mb-2 ${endDisabled ? 'text-slate-400' : 'text-slate-700'}`}>
+                <label
+                  className={`block text-sm font-medium mb-2 ${endDisabled ? 'text-slate-400' : 'text-slate-700'}`}
+                >
                   끝
                 </label>
                 {(errors['end.chapter'] || errors['end.verse']) && (
@@ -359,11 +343,17 @@ export const ScriptureRangeModal = ({
                   />
                 </div>
               </div>
-            </div>
-          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
+          {todayScriptureRange && (
+            <button
+              onClick={handleClear}
+              className="px-4 py-2 text-sm text-red-500 hover:text-red-700 mr-auto"
+            >
+              해제
+            </button>
+          )}
           <button
             onClick={handleClose}
             className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800"

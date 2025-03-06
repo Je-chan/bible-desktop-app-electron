@@ -2,11 +2,9 @@ import { z } from 'zod'
 import { BIBLE_BOOKS } from '../shared/config'
 
 // 책 약어가 유효한지 확인
-const bookAbbrSchema = z
-  .string()
-  .refine((abbr) => BIBLE_BOOKS.some((book) => book.abbr === abbr), {
-    message: '유효하지 않은 책 약어입니다'
-  })
+const bookAbbrSchema = z.string().refine((abbr) => BIBLE_BOOKS.some((book) => book.abbr === abbr), {
+  message: '유효하지 않은 책 약어입니다'
+})
 
 // 개별 절 위치 스키마
 const versePositionSchema = z.object({

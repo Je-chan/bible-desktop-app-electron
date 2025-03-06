@@ -15,7 +15,7 @@ extraResources:
   - from: resources/bible
     to: bible
     filter:
-      - "**/*.bdb"
+      - '**/*.bdb'
 win:
   executableName: YeDarmBible
 nsis:

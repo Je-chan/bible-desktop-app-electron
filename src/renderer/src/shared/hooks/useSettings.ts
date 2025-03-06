@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react'
 
+export interface ResponsiveReadingColors {
+  leader: string
+  congregation: string
+  unison: string
+}
+
 export interface SettingsState {
   backgroundColor: string
   fontFamily: string
@@ -10,6 +16,8 @@ export interface SettingsState {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter'
+  responsiveReadingColors: ResponsiveReadingColors
   systemFonts: string[]
 }
 
@@ -26,6 +34,12 @@ const getInitialSettings = (): SettingsState => {
     headerFontSize: saved.headerFontSize ?? 14,
     headerPaddingY: saved.headerPaddingY ?? 16,
     headerAlign: saved.headerAlign ?? 'center',
+    viewMode: saved.viewMode ?? 'verse',
+    responsiveReadingColors: saved.responsiveReadingColors ?? {
+      leader: '#8CC8EB',
+      congregation: '#E8A87C',
+      unison: '#C49ADE'
+    },
     systemFonts: []
   }
 }
@@ -37,13 +51,13 @@ export const useSettings = () => {
   useEffect(() => {
     const loadFonts = async () => {
       const fonts = await window.fontsApi.list()
-      setSettings(prev => ({ ...prev, systemFonts: fonts }))
+      setSettings((prev) => ({ ...prev, systemFonts: fonts }))
     }
     loadFonts()
   }, [])
 
   const updateSettings = (updates: Partial<Omit<SettingsState, 'systemFonts'>>) => {
-    setSettings(prev => ({ ...prev, ...updates }))
+    setSettings((prev) => ({ ...prev, ...updates }))
   }
 
   const saveSettings = async () => {

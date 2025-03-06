@@ -17,7 +17,9 @@ async function main() {
 
   if (args.length < 3) {
     console.log('사용법: node scripts/replace-bible-text.js <db파일경로> <찾을텍스트> <바꿀텍스트>')
-    console.log('예시: node scripts/replace-bible-text.js resources/bible/공동번역.bdb 하느님 하나님')
+    console.log(
+      '예시: node scripts/replace-bible-text.js resources/bible/공동번역.bdb 하느님 하나님'
+    )
     process.exit(1)
   }
 
@@ -38,9 +40,7 @@ async function main() {
   console.log(`백업 파일 생성: ${backupPath}`)
 
   // 변경 전 개수 확인
-  const beforeResult = db.exec(
-    `SELECT COUNT(*) FROM Bible WHERE btext LIKE '%${searchText}%'`
-  )
+  const beforeResult = db.exec(`SELECT COUNT(*) FROM Bible WHERE btext LIKE '%${searchText}%'`)
   const beforeCount = beforeResult[0]?.values[0][0] || 0
   console.log(`\n변경 전 "${searchText}" 포함 구절: ${beforeCount}개`)
 
@@ -54,14 +54,10 @@ async function main() {
   db.run(`UPDATE Bible SET btext = REPLACE(btext, '${searchText}', '${replaceText}')`)
 
   // 변경 후 확인
-  const afterResult = db.exec(
-    `SELECT COUNT(*) FROM Bible WHERE btext LIKE '%${searchText}%'`
-  )
+  const afterResult = db.exec(`SELECT COUNT(*) FROM Bible WHERE btext LIKE '%${searchText}%'`)
   const afterCount = afterResult[0]?.values[0][0] || 0
 
-  const newResult = db.exec(
-    `SELECT COUNT(*) FROM Bible WHERE btext LIKE '%${replaceText}%'`
-  )
+  const newResult = db.exec(`SELECT COUNT(*) FROM Bible WHERE btext LIKE '%${replaceText}%'`)
   const newCount = newResult[0]?.values[0][0] || 0
 
   console.log(`변경 후 "${searchText}" 포함 구절: ${afterCount}개`)

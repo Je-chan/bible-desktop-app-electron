@@ -163,9 +163,7 @@ export const getVerse = (
   verse: number
 ): string | null => {
   const db = getDb(version)
-  const stmt = db.prepare(
-    'SELECT btext FROM Bible WHERE book = ? AND chapter = ? AND verse = ?'
-  )
+  const stmt = db.prepare('SELECT btext FROM Bible WHERE book = ? AND chapter = ? AND verse = ?')
   const row = stmt.get(book, chapter, verse) as { btext: string } | undefined
   return row?.btext ?? null
 }
@@ -176,15 +174,9 @@ export const getVerse = (
 특정 장의 최대 절 번호:
 
 ```typescript
-export const getMaxVerse = (
-  version: string,
-  book: number,
-  chapter: number
-): number => {
+export const getMaxVerse = (version: string, book: number, chapter: number): number => {
   const db = getDb(version)
-  const stmt = db.prepare(
-    'SELECT MAX(verse) as maxVerse FROM Bible WHERE book = ? AND chapter = ?'
-  )
+  const stmt = db.prepare('SELECT MAX(verse) as maxVerse FROM Bible WHERE book = ? AND chapter = ?')
   const row = stmt.get(book, chapter) as { maxVerse: number } | undefined
   return row?.maxVerse ?? 0
 }

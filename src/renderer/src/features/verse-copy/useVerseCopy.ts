@@ -14,13 +14,8 @@ const cleanVerseText = (text: string) =>
     .trim()
 
 export const useVerseCopy = ({ onCopySuccess }: UseVerseCopyProps = {}) => {
-  const {
-    currentVerse,
-    currentVersion,
-    isCompareOpen,
-    comparedVersion,
-    comparedVerse
-  } = useBibleStore()
+  const { currentVerse, currentVersion, isCompareOpen, comparedVersion, comparedVerse } =
+    useBibleStore()
 
   // 구절을 포맷팅하여 복사 텍스트 생성
   const formatVerseForCopy = useCallback(() => {

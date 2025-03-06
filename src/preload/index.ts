@@ -20,12 +20,64 @@ const bibleApi = {
     limit?: number,
     offset?: number
   ) =>
-    ipcRenderer.invoke('bible:search', version, keywords, startBook, endBook, limit, offset) as Promise<
-      Array<{ book: number; chapter: number; verse: number; text: string }>
-    >,
+    ipcRenderer.invoke(
+      'bible:search',
+      version,
+      keywords,
+      startBook,
+      endBook,
+      limit,
+      offset
+    ) as Promise<Array<{ book: number; chapter: number; verse: number; text: string }>>,
 
   searchCount: (version: string, keywords: string[], startBook?: number, endBook?: number) =>
-    ipcRenderer.invoke('bible:searchCount', version, keywords, startBook, endBook) as Promise<number>
+    ipcRenderer.invoke(
+      'bible:searchCount',
+      version,
+      keywords,
+      startBook,
+      endBook
+    ) as Promise<number>,
+
+  countVersesInRange: (
+    version: string,
+    startBook: number,
+    startChapter: number,
+    startVerse: number,
+    endBook: number,
+    endChapter: number,
+    endVerse: number
+  ) =>
+    ipcRenderer.invoke(
+      'bible:countVersesInRange',
+      version,
+      startBook,
+      startChapter,
+      startVerse,
+      endBook,
+      endChapter,
+      endVerse
+    ) as Promise<number>,
+
+  getVerseIndexInRange: (
+    version: string,
+    bookNumber: number,
+    chapter: number,
+    verse: number,
+    startBook: number,
+    startChapter: number,
+    startVerse: number
+  ) =>
+    ipcRenderer.invoke(
+      'bible:getVerseIndexInRange',
+      version,
+      bookNumber,
+      chapter,
+      verse,
+      startBook,
+      startChapter,
+      startVerse
+    ) as Promise<number>
 }
 
 // Settings - 동기적으로 초기 설정 로드 (렌더러 시작 시 즉시 사용 가능)
@@ -39,6 +91,8 @@ const initialSettings = ipcRenderer.sendSync('settings:getSync') as {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter'
+  responsiveReadingColors: { leader: string; congregation: string; unison: string }
 }
 
 // Settings API for renderer
@@ -55,6 +109,7 @@ const settingsApi = {
     headerFontSize?: number
     headerPaddingY?: number
     headerAlign?: 'left' | 'center' | 'right'
+    viewMode?: 'verse' | 'chapter'
   }) => ipcRenderer.invoke('settings:set', settings)
 }
 
@@ -65,7 +120,8 @@ const fontsApi = {
 
 // IME API for renderer (Windows IME 설정 관련)
 const imeApi = {
-  getStatus: () => ipcRenderer.invoke('ime:getStatus') as Promise<'per-thread' | 'global' | 'not-windows'>,
+  getStatus: () =>
+    ipcRenderer.invoke('ime:getStatus') as Promise<'per-thread' | 'global' | 'not-windows'>,
   setGlobal: () => ipcRenderer.invoke('ime:setGlobal') as Promise<boolean>,
   isWindows: () => ipcRenderer.invoke('ime:isWindows') as Promise<boolean>
 }

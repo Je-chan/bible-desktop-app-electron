@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useBibleStore } from './store/useBibleStore'
-import { useSettings } from './shared/hooks'
+import { useSettings, useResponsiveReading } from './shared/hooks'
 import { useVerseNavigation } from './features/verse-navigation'
 import { useVerseSearch } from './features/verse-search'
 import { useVersionSwitch } from './features/version-switch'
@@ -63,6 +63,58 @@ function App() {
   }, [todayScriptureRange])
   const { settings, updateSettings, saveSettings } = useSettings()
 
+  // 교독문 모드
+  const {
+    isActive: isResponsiveActive,
+    totalVerses: responsiveTotalVerses,
+    colors: responsiveColors,
+    getRolesForChapter,
+    getRoleForVerse
+  } = useResponsiveReading(settings.responsiveReadingColors)
+  const [verseRoles, setVerseRoles] = useState<
+    Map<number, import('./shared/lib').ResponsiveReadingRole>
+  >(new Map())
+  const [singleVerseRole, setSingleVerseRole] =
+    useState<import('./shared/lib').ResponsiveReadingRole>(null)
+
+  // 교독문 역할 계산: 장/포커스 모드
+  useEffect(() => {
+    if (!isResponsiveActive || !currentVerse || !chapterVerses) {
+      setVerseRoles(new Map())
+      return
+    }
+    getRolesForChapter(
+      currentVerse.book,
+      currentVerse.chapter,
+      chapterVerses.map((v) => v.verse)
+    ).then(setVerseRoles)
+  }, [
+    isResponsiveActive,
+    responsiveTotalVerses,
+    currentVerse?.book,
+    currentVerse?.chapter,
+    chapterVerses,
+    getRolesForChapter
+  ])
+
+  // 교독문 역할 계산: 절 보기 모드
+  useEffect(() => {
+    if (!isResponsiveActive || !currentVerse) {
+      setSingleVerseRole(null)
+      return
+    }
+    getRoleForVerse(currentVerse.book, currentVerse.chapter, currentVerse.verse).then(
+      setSingleVerseRole
+    )
+  }, [
+    isResponsiveActive,
+    responsiveTotalVerses,
+    currentVerse?.book,
+    currentVerse?.chapter,
+    currentVerse?.verse,
+    getRoleForVerse
+  ])
+
   // 복사 성공 시 토스트 표시
   const handleCopySuccess = useCallback(() => {
     setShowCopyToast(true)
@@ -88,17 +140,20 @@ function App() {
 
   // 보기 모드 변경 핸들러
   const handleViewModeChange = useCallback(
-    async (mode: 'verse' | 'chapter' | 'focus') => {
+    async (mode: 'verse' | 'chapter') => {
       setViewMode(mode)
-      // verse → chapter/focus 전환 시 장 데이터 fetch
-      if (mode !== 'verse' && !chapterVerses && currentVerse) {
+      // 설정에 저장
+      updateSettings({ viewMode: mode })
+      window.settingsApi.set({ viewMode: mode })
+      // verse → chapter 전환 시 장 데이터 fetch
+      if (mode === 'chapter' && !chapterVerses && currentVerse) {
         const book = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
         if (book) {
           await fetchChapter(book.id, currentVerse.chapter)
         }
       }
     },
-    [setViewMode, chapterVerses, currentVerse, fetchChapter]
+    [setViewMode, updateSettings, chapterVerses, currentVerse, fetchChapter]
   )
 
   // Kiosk 모드 토글 핸들러
@@ -179,6 +234,13 @@ function App() {
     }
   }, [isCompareOpen])
 
+  // 저장된 viewMode 복원
+  useEffect(() => {
+    if (settings.viewMode && settings.viewMode !== viewMode) {
+      handleViewModeChange(settings.viewMode)
+    }
+  }, [])
+
   // 초기 구절 로드
   useEffect(() => {
     fetchVerse('요', 43, 3, 16)
@@ -190,6 +252,12 @@ function App() {
       setBook(currentVerse.book)
       setChapter(currentVerse.chapter.toString())
       setVerse(currentVerse.verse.toString())
+      // input이 포커스된 상태면 텍스트 재선택 (리렌더링으로 선택 해제 방지)
+      setTimeout(() => {
+        if (document.activeElement === masterInputRef.current) {
+          masterInputRef.current?.select()
+        }
+      }, 0)
     }
   }, [currentVerse])
 
@@ -226,7 +294,10 @@ function App() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: settings.backgroundColor }}>
+    <div
+      className="h-screen w-screen flex flex-col"
+      style={{ backgroundColor: settings.backgroundColor }}
+    >
       <Header
         currentVerse={currentVerse}
         currentVersion={currentVersion}
@@ -276,6 +347,8 @@ function App() {
                   }
                 }
               }}
+              verseRoles={verseRoles}
+              responsiveColors={responsiveColors}
             />
           ) : (
             <VerseContent
@@ -285,6 +358,8 @@ function App() {
               fontColor={settings.fontColor}
               paddingX={settings.paddingX}
               paddingY={settings.paddingY}
+              responsiveRole={singleVerseRole}
+              responsiveColor={singleVerseRole ? responsiveColors[singleVerseRole] : undefined}
             />
           )}
         </div>
@@ -342,6 +417,7 @@ function App() {
         headerPaddingY={settings.headerPaddingY}
         headerAlign={settings.headerAlign}
         systemFonts={settings.systemFonts}
+        responsiveReadingColors={settings.responsiveReadingColors}
         onBackgroundColorChange={(color) => updateSettings({ backgroundColor: color })}
         onFontFamilyChange={(font) => updateSettings({ fontFamily: font })}
         onFontSizeChange={(size) => updateSettings({ fontSize: size })}
@@ -351,6 +427,9 @@ function App() {
         onHeaderFontSizeChange={(size) => updateSettings({ headerFontSize: size })}
         onHeaderPaddingYChange={(padding) => updateSettings({ headerPaddingY: padding })}
         onHeaderAlignChange={(align) => updateSettings({ headerAlign: align })}
+        onResponsiveReadingColorsChange={(colors) =>
+          updateSettings({ responsiveReadingColors: colors })
+        }
         onSave={handleSaveSettings}
         onClose={() => setShowSettings(false)}
       />

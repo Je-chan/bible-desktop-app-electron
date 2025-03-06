@@ -3,7 +3,15 @@ import { join } from 'path'
 import { execSync } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { getVerse, getChapter, getMaxVerse, searchVerses, searchVersesCount } from './database'
+import {
+  getVerse,
+  getChapter,
+  getMaxVerse,
+  searchVerses,
+  searchVersesCount,
+  countVersesInRange,
+  getVerseIndexInRange
+} from './database'
 import fontList from 'font-list'
 
 // 설정 스토어
@@ -17,6 +25,8 @@ interface Settings {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter'
+  responsiveReadingColors: { leader: string; congregation: string; unison: string }
 }
 
 // electron-store는 ESM이므로 동적 import 필요
@@ -34,7 +44,9 @@ const initStore = async () => {
       paddingY: 0,
       headerFontSize: 14,
       headerPaddingY: 16,
-      headerAlign: 'center' as const
+      headerAlign: 'center' as const,
+      viewMode: 'verse' as const,
+      responsiveReadingColors: { leader: '#8CC8EB', congregation: '#E8A87C', unison: '#C49ADE' }
     }
   })
 }
@@ -160,6 +172,36 @@ app.whenReady().then(async () => {
   ipcMain.handle('bible:searchCount', (_, version, keywords, startBook, endBook) => {
     return searchVersesCount(version, keywords, startBook, endBook)
   })
+
+  ipcMain.handle(
+    'bible:countVersesInRange',
+    (_, version, startBook, startChapter, startVerse, endBook, endChapter, endVerse) => {
+      return countVersesInRange(
+        version,
+        startBook,
+        startChapter,
+        startVerse,
+        endBook,
+        endChapter,
+        endVerse
+      )
+    }
+  )
+
+  ipcMain.handle(
+    'bible:getVerseIndexInRange',
+    (_, version, bookNumber, chapter, verse, startBook, startChapter, startVerse) => {
+      return getVerseIndexInRange(
+        version,
+        bookNumber,
+        chapter,
+        verse,
+        startBook,
+        startChapter,
+        startVerse
+      )
+    }
+  )
 
   // Settings IPC handlers (async)
   ipcMain.handle('settings:get', () => {

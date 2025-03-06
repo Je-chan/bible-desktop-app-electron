@@ -3,6 +3,7 @@
 ## 개요
 
 Zustand를 사용하여 전역 상태를 관리합니다. 설정은 이중 레이어로 관리됩니다:
+
 - **메모리**: 실시간 미리보기
 - **영구 저장**: 명시적 저장 시 electron-store에 반영
 
@@ -118,21 +119,21 @@ export const useSettings = () => {
       const saved = await window.settingsApi.get()
       const merged = { ...DEFAULT_SETTINGS, ...saved }
       setSettings(merged)
-      setOriginalSettings(merged)  // 원본 백업
+      setOriginalSettings(merged) // 원본 백업
     }
     loadSettings()
   }, [])
 
   // 실시간 변경 (미리보기)
   const updateSettings = (partial: Partial<Settings>) => {
-    setSettings(prev => ({ ...prev, ...partial }))
+    setSettings((prev) => ({ ...prev, ...partial }))
     // electron-store에는 저장하지 않음!
   }
 
   // 명시적 저장
   const saveSettings = async () => {
     await window.settingsApi.set(settings)
-    setOriginalSettings(settings)  // 원본 갱신
+    setOriginalSettings(settings) // 원본 갱신
   }
 
   // 취소 (원본으로 복구)
@@ -163,7 +164,7 @@ React 상태만 변경 (미리보기 반영)
 addRecentSearch: (query: string) => {
   set((state) => {
     // 중복 제거
-    const filtered = state.recentSearches.filter(q => q !== query)
+    const filtered = state.recentSearches.filter((q) => q !== query)
     // 맨 앞에 추가, 최대 10개
     return {
       recentSearches: [query, ...filtered].slice(0, 10)

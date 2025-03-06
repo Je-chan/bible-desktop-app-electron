@@ -1,5 +1,14 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { Settings, BookOpen, Info, Maximize2, Minimize2, Type, AlignJustify, Focus } from 'lucide-react'
+import {
+  Settings,
+  BookOpen,
+  Info,
+  Maximize2,
+  Minimize2,
+  Type,
+  AlignJustify,
+  Focus
+} from 'lucide-react'
 import { VERSION_MAP } from '../../shared/config'
 
 // 버전 단축키 목록 (버전명 기준 정렬)
@@ -96,7 +105,7 @@ export const Footer = ({
       color: fontColor,
       borderColor: fontColor + '40'
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeField, backgroundColor, fontColor, renderTrigger])
 
   // 초기 마운트 후 위치 계산을 위한 리렌더링
@@ -207,7 +216,9 @@ export const Footer = ({
           }, 0)
         } else if (e.key === 'ArrowRight' && isAtEnd) {
           e.preventDefault()
-          setActiveField((prev) => (prev === 'book' ? 'chapter' : prev === 'chapter' ? 'verse' : 'book'))
+          setActiveField((prev) =>
+            prev === 'book' ? 'chapter' : prev === 'chapter' ? 'verse' : 'book'
+          )
           setTimeout(() => {
             masterInputRef.current?.setSelectionRange(0, 0)
           }, 0)
@@ -241,7 +252,11 @@ export const Footer = ({
       className="h-10 border-t flex items-center justify-between px-6"
       style={{ backgroundColor, borderColor: backgroundColor }}
     >
-      <div ref={containerRef} className="relative flex items-center gap-3 text-sm" style={{ color: fontColor }}>
+      <div
+        ref={containerRef}
+        className="relative flex items-center gap-3 text-sm"
+        style={{ color: fontColor }}
+      >
         {/* 마스터 Input - 단 하나만 존재, 위치만 변경 */}
         <input
           ref={masterInputRef}
@@ -251,7 +266,9 @@ export const Footer = ({
           onKeyDown={handleKeyDown}
           className="px-2 py-1 rounded text-sm focus:outline-none border z-10"
           style={inputStyle}
-          aria-label={activeField === 'book' ? '성경 책 이름' : activeField === 'chapter' ? '장' : '절'}
+          aria-label={
+            activeField === 'book' ? '성경 책 이름' : activeField === 'chapter' ? '장' : '절'
+          }
           data-allow-arrow-navigation="true"
         />
 
@@ -296,7 +313,10 @@ export const Footer = ({
       </div>
 
       {/* 버전 단축키 표시 */}
-      <div className="flex-1 flex items-center justify-center gap-2 text-xs overflow-hidden mx-4" style={{ color: fontColor, opacity: 0.5 }}>
+      <div
+        className="flex-1 flex items-center justify-center gap-2 text-xs overflow-hidden mx-4"
+        style={{ color: fontColor, opacity: 0.5 }}
+      >
         {VERSION_SHORTCUTS.map(({ key, name }) => (
           <span key={key} className="whitespace-nowrap">
             {name}({key})
@@ -310,11 +330,11 @@ export const Footer = ({
           className="flex items-center rounded-md border"
           style={{ borderColor: fontColor + '20' }}
         >
-          {([
+          {[
             { mode: 'verse' as const, icon: Type, label: '절 보기' },
             { mode: 'chapter' as const, icon: AlignJustify, label: '장 보기' },
             { mode: 'focus' as const, icon: Focus, label: '포커스 보기' }
-          ]).map(({ mode, icon: Icon, label }) => (
+          ].map(({ mode, icon: Icon, label }) => (
             <button
               key={mode}
               onClick={() => onViewModeChange(mode)}

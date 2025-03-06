@@ -18,6 +18,9 @@ interface BibleStore {
   // 보기 모드
   viewMode: ViewMode
   chapterVerses: ChapterVerse[] | null
+  scrollBehavior: ScrollBehavior
+  // 교독문 모드
+  isResponsiveReading: boolean
   // 역본 비교 관련
   isCompareOpen: boolean
   comparedVersion: string
@@ -30,6 +33,8 @@ interface BibleStore {
   setViewMode: (mode: ViewMode) => void
   toggleViewMode: () => void
   fetchChapter: (bookNumber: number, chapter: number) => Promise<void>
+  // 교독문 모드
+  toggleResponsiveReading: () => void
   // 역본 비교 관련
   setCompareOpen: (isOpen: boolean) => void
   setComparedVersion: (version: string) => void
@@ -38,7 +43,8 @@ interface BibleStore {
     bookName: string,
     bookNumber: number,
     chapter: number,
-    verse: number
+    verse: number,
+    scrollBehavior?: ScrollBehavior
   ) => Promise<boolean>
 }
 
@@ -69,6 +75,9 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   // 보기 모드
   viewMode: 'verse',
   chapterVerses: null,
+  scrollBehavior: 'instant',
+  // 교독문 모드
+  isResponsiveReading: false,
   // 역본 비교 관련
   isCompareOpen: false,
   comparedVersion: '개역한글',
@@ -102,6 +111,10 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
     set({ chapterVerses: verses })
   },
 
+  // 교독문 모드
+  toggleResponsiveReading: () =>
+    set((state) => ({ isResponsiveReading: !state.isResponsiveReading })),
+
   // 역본 비교 관련
   setCompareOpen: (isOpen) => set({ isCompareOpen: isOpen }),
 
@@ -126,10 +139,18 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
     }
   },
 
-  fetchVerse: async (bookName, bookNumber, chapter, verse) => {
+  fetchVerse: async (bookName, bookNumber, chapter, verse, scrollBehavior = 'instant') => {
     set({ isLoading: true })
 
-    const { currentVersion, addToRecent, todayScriptureRange, isCompareOpen, fetchComparedVerse, viewMode, fetchChapter } = get()
+    const {
+      currentVersion,
+      addToRecent,
+      todayScriptureRange,
+      isCompareOpen,
+      fetchComparedVerse,
+      viewMode,
+      fetchChapter
+    } = get()
     const text = await window.bibleApi.getVerse(currentVersion, bookNumber, chapter, verse)
 
     if (text) {
@@ -144,7 +165,8 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
       // 범위 내에 있으면 currentScripture 업데이트
       const updates: Partial<BibleStore> = {
         currentVerse: result,
-        isLoading: false
+        isLoading: false,
+        scrollBehavior
       }
 
       if (todayScriptureRange && isVerseInRange(bookNumber, chapter, verse, todayScriptureRange)) {
