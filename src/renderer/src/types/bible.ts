@@ -6,6 +6,7 @@ export interface BibleVerse {
 }
 
 export interface BibleBook {
+  id: number // DB에서 사용하는 책 번호
   name: string
   abbr: string
   chapters: number
