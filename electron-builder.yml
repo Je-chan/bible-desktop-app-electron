@@ -11,6 +11,11 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+extraResources:
+  - from: resources/bible
+    to: bible
+    filter:
+      - "**/*.bdb"
 win:
   executableName: bible-desktop-app-electron
 nsis:

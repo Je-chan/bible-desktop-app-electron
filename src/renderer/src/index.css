@@ -3,7 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    @apply h-full w-full m-0 p-0;
+  }
+
   body {
-    @apply antialiased;
+    @apply antialiased overflow-hidden;
   }
 }

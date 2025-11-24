@@ -6,3 +6,4 @@ out
 *.log*
 .idea/
 pnpm-lock.yaml
+resources/*

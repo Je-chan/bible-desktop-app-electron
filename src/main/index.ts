@@ -2,6 +2,31 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { getVerse, getChapter, getMaxVerse } from './database'
+import fontList from 'font-list'
+
+// 설정 스토어
+interface Settings {
+  backgroundColor: string
+  fontFamily: string
+  fontSize: number
+  fontColor: string
+}
+
+// electron-store는 ESM이므로 동적 import 필요
+let store: any
+
+const initStore = async () => {
+  const Store = (await import('electron-store')).default
+  store = new Store<Settings>({
+    defaults: {
+      backgroundColor: '#f8fafc', // slate-50
+      fontFamily: 'serif',
+      fontSize: 30,
+      fontColor: '#1e293b' // slate-800
+    }
+  })
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -18,6 +43,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    mainWindow.maximize()
     mainWindow.show()
   })
 
@@ -38,7 +64,10 @@ function createWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Store 초기화
+  await initStore()
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -51,6 +80,38 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  // Bible IPC handlers
+  ipcMain.handle('bible:getVerse', (_, version, book, chapter, verse) => {
+    return getVerse(version, book, chapter, verse)
+  })
+
+  ipcMain.handle('bible:getChapter', (_, version, book, chapter) => {
+    return getChapter(version, book, chapter)
+  })
+
+  ipcMain.handle('bible:getMaxVerse', (_, version, book, chapter) => {
+    return getMaxVerse(version, book, chapter)
+  })
+
+  // Settings IPC handlers
+  ipcMain.handle('settings:get', () => {
+    return store.store
+  })
+
+  ipcMain.handle('settings:set', (_, settings: Partial<Settings>) => {
+    Object.entries(settings).forEach(([key, value]) => {
+      store.set(key as keyof Settings, value)
+    })
+    return store.store
+  })
+
+  // 시스템 폰트 목록 가져오기
+  ipcMain.handle('fonts:list', async () => {
+    const fonts = await fontList.getFonts()
+    // 따옴표 제거하고 정렬
+    return fonts.map((f) => f.replace(/"/g, '')).sort()
+  })
 
   createWindow()
 
