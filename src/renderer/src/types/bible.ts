@@ -19,3 +19,15 @@ export interface SearchResult {
   text: string
   reference: string
 }
+
+export interface VersePosition {
+  bookId: number
+  bookName: string
+  chapter: number
+  verse: number
+}
+
+export interface ScriptureRange {
+  start: VersePosition
+  end: VersePosition
+}

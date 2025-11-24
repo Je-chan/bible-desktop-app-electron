@@ -1,0 +1,1 @@
+export { VerseContent } from './VerseContent'

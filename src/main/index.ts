@@ -11,6 +11,7 @@ interface Settings {
   fontFamily: string
   fontSize: number
   fontColor: string
+  paddingX: number
 }
 
 // electron-store는 ESM이므로 동적 import 필요
@@ -23,7 +24,8 @@ const initStore = async () => {
       backgroundColor: '#f8fafc', // slate-50
       fontFamily: 'serif',
       fontSize: 30,
-      fontColor: '#1e293b' // slate-800
+      fontColor: '#1e293b', // slate-800
+      paddingX: 48
     }
   })
 }

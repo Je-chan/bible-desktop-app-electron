@@ -11,6 +11,7 @@ interface Settings {
   fontFamily: string
   fontSize: number
   fontColor: string
+  paddingX: number
 }
 
 interface SettingsApi {
