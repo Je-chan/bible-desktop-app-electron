@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
-import { X } from 'lucide-react'
+import { X, AlertCircle } from 'lucide-react'
 import { BIBLE_BOOKS } from '../../shared/config'
 import type { ScriptureRange } from '../../types/bible'
+import { scriptureRangeSchema, validateVerseMax } from '../../lib/validation'
+import { useBibleStore } from '../../store/useBibleStore'
 
 interface ScriptureRangeModalProps {
   isOpen: boolean
@@ -32,15 +34,19 @@ export const ScriptureRangeModal = ({
   const endVerseRef = useRef<HTMLInputElement>(null)
   const saveButtonRef = useRef<HTMLButtonElement>(null)
 
+  const { currentVersion } = useBibleStore()
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
   // 시작 범위가 완전히 설정되었는지 확인
   const isStartComplete = () => {
     const book = BIBLE_BOOKS.find((b) => b.abbr === startBookAbbr)
     return book && startChapter && startVerse && parseInt(startChapter) > 0 && parseInt(startVerse) > 0
   }
 
-  // 모달이 열릴 때 상태 초기화
+  // 모달이 열릴 때 저장된 값으로 초기화
   useEffect(() => {
     if (isOpen) {
+      // 저장된 todayScriptureRange 값으로 복원
       setRangeEnabled(!!todayScriptureRange)
       setStartBookAbbr(todayScriptureRange?.start.bookAbbr || '')
       setStartChapter(todayScriptureRange?.start.chapter.toString() || '')
@@ -49,9 +55,12 @@ export const ScriptureRangeModal = ({
       setEndChapter(todayScriptureRange?.end.chapter.toString() || '')
       setEndVerse(todayScriptureRange?.end.verse.toString() || '')
 
-      // 체크박스로 포커스
+      // 에러 초기화
+      setErrors({})
+
+      // 포커스
       setTimeout(() => {
-        if (rangeEnabled) {
+        if (todayScriptureRange) {
           startBookRef.current?.focus()
         }
       }, 100)
@@ -72,40 +81,98 @@ export const ScriptureRangeModal = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose()
+        handleClose()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!rangeEnabled) {
       onSave(null)
       onClose()
       return
     }
 
+    setErrors({})
+
     const startBook = BIBLE_BOOKS.find((b) => b.abbr === startBookAbbr)
     const endBook = BIBLE_BOOKS.find((b) => b.abbr === endBookAbbr)
 
-    if (startBook && endBook && startChapter && startVerse && endChapter && endVerse) {
-      onSave({
-        start: {
-          bookId: startBook.id,
-          bookAbbr: startBook.abbr,
-          chapter: parseInt(startChapter),
-          verse: parseInt(startVerse)
-        },
-        end: {
-          bookId: endBook.id,
-          bookAbbr: endBook.abbr,
-          chapter: parseInt(endChapter),
-          verse: parseInt(endVerse)
-        }
-      })
+    if (!startBook || !endBook || !startChapter || !startVerse || !endChapter || !endVerse) {
+      setErrors({ general: '모든 필드를 입력해주세요' })
+      return
     }
+
+    const rangeData = {
+      start: {
+        bookAbbr: startBook.abbr,
+        chapter: parseInt(startChapter),
+        verse: parseInt(startVerse)
+      },
+      end: {
+        bookAbbr: endBook.abbr,
+        chapter: parseInt(endChapter),
+        verse: parseInt(endVerse)
+      }
+    }
+
+    // Zod 스키마 검증
+    const result = scriptureRangeSchema.safeParse(rangeData)
+    if (!result.success) {
+      const newErrors: Record<string, string> = {}
+      result.error.issues.forEach((issue) => {
+        const path = issue.path.join('.')
+        newErrors[path] = issue.message
+      })
+      setErrors(newErrors)
+      return
+    }
+
+    // 절의 최대값 검증 (비동기)
+    const startVerseCheck = await validateVerseMax(
+      startBook.abbr,
+      parseInt(startChapter),
+      parseInt(startVerse),
+      currentVersion
+    )
+    if (!startVerseCheck.valid) {
+      setErrors({
+        'start.verse': `${startBook.name} ${parseInt(startChapter)}장은 ${startVerseCheck.maxVerse || 1}절까지만 있습니다.`
+      })
+      return
+    }
+
+    const endVerseCheck = await validateVerseMax(
+      endBook.abbr,
+      parseInt(endChapter),
+      parseInt(endVerse),
+      currentVersion
+    )
+    if (!endVerseCheck.valid) {
+      setErrors({
+        'end.verse': `${endBook.name} ${parseInt(endChapter)}장은 ${endVerseCheck.maxVerse || 1}절까지만 있습니다.`
+      })
+      return
+    }
+
+    // 검증 통과 - 저장
+    onSave({
+      start: {
+        bookId: startBook.id,
+        bookAbbr: startBook.abbr,
+        chapter: parseInt(startChapter),
+        verse: parseInt(startVerse)
+      },
+      end: {
+        bookId: endBook.id,
+        bookAbbr: endBook.abbr,
+        chapter: parseInt(endChapter),
+        verse: parseInt(endVerse)
+      }
+    })
     onClose()
   }
 
@@ -127,6 +194,12 @@ export const ScriptureRangeModal = ({
     }
   }
 
+  const handleClose = () => {
+    // 저장하지 않고 닫을 때는 상태 초기화 (다음에 열릴 때 useEffect에서 복원됨)
+    setErrors({})
+    onClose()
+  }
+
   if (!isOpen) return null
 
   const endDisabled = !isStartComplete()
@@ -136,12 +209,26 @@ export const ScriptureRangeModal = ({
       <div className="bg-white rounded-lg shadow-xl w-96 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">본문 말씀 범위</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={handleClose} className="text-slate-400 hover:text-slate-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
+          {errors.general && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-600" />
+              <span className="text-sm text-red-600">{errors.general}</span>
+            </div>
+          )}
+
+          {errors.end && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-600" />
+              <span className="text-sm text-red-600">{errors.end}</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -161,6 +248,12 @@ export const ScriptureRangeModal = ({
               {/* 시작 */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">시작</label>
+                {(errors['start.chapter'] || errors['start.verse']) && (
+                  <div className="mb-2 flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{errors['start.chapter'] || errors['start.verse']}</span>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <input
                     ref={startBookRef}
@@ -205,6 +298,12 @@ export const ScriptureRangeModal = ({
                 <label className={`block text-sm font-medium mb-2 ${endDisabled ? 'text-slate-400' : 'text-slate-700'}`}>
                   끝
                 </label>
+                {(errors['end.chapter'] || errors['end.verse']) && (
+                  <div className="mb-2 flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{errors['end.chapter'] || errors['end.verse']}</span>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <input
                     ref={endBookRef}
@@ -264,7 +363,7 @@ export const ScriptureRangeModal = ({
 
         <div className="mt-6 flex justify-end gap-2">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800"
           >
             취소
