@@ -5,24 +5,24 @@ import type { ScriptureRange } from '../../types/bible'
 
 interface ScriptureRangeModalProps {
   isOpen: boolean
-  scriptureRange: ScriptureRange | null
+  todayScriptureRange: ScriptureRange | null
   onSave: (range: ScriptureRange | null) => void
   onClose: () => void
 }
 
 export const ScriptureRangeModal = ({
   isOpen,
-  scriptureRange,
+  todayScriptureRange,
   onSave,
   onClose
 }: ScriptureRangeModalProps) => {
-  const [rangeEnabled, setRangeEnabled] = useState(!!scriptureRange)
-  const [startBookName, setStartBookName] = useState(scriptureRange?.start.bookName || '')
-  const [startChapter, setStartChapter] = useState(scriptureRange?.start.chapter.toString() || '')
-  const [startVerse, setStartVerse] = useState(scriptureRange?.start.verse.toString() || '')
-  const [endBookName, setEndBookName] = useState(scriptureRange?.end.bookName || '')
-  const [endChapter, setEndChapter] = useState(scriptureRange?.end.chapter.toString() || '')
-  const [endVerse, setEndVerse] = useState(scriptureRange?.end.verse.toString() || '')
+  const [rangeEnabled, setRangeEnabled] = useState(!!todayScriptureRange)
+  const [startBookAbbr, setStartBookAbbr] = useState(todayScriptureRange?.start.bookAbbr || '')
+  const [startChapter, setStartChapter] = useState(todayScriptureRange?.start.chapter.toString() || '')
+  const [startVerse, setStartVerse] = useState(todayScriptureRange?.start.verse.toString() || '')
+  const [endBookAbbr, setEndBookAbbr] = useState(todayScriptureRange?.end.bookAbbr || '')
+  const [endChapter, setEndChapter] = useState(todayScriptureRange?.end.chapter.toString() || '')
+  const [endVerse, setEndVerse] = useState(todayScriptureRange?.end.verse.toString() || '')
 
   const startBookRef = useRef<HTMLInputElement>(null)
   const startChapterRef = useRef<HTMLInputElement>(null)
@@ -34,20 +34,20 @@ export const ScriptureRangeModal = ({
 
   // 시작 범위가 완전히 설정되었는지 확인
   const isStartComplete = () => {
-    const book = BIBLE_BOOKS.find((b) => b.name === startBookName)
+    const book = BIBLE_BOOKS.find((b) => b.abbr === startBookAbbr)
     return book && startChapter && startVerse && parseInt(startChapter) > 0 && parseInt(startVerse) > 0
   }
 
   // 모달이 열릴 때 상태 초기화
   useEffect(() => {
     if (isOpen) {
-      setRangeEnabled(!!scriptureRange)
-      setStartBookName(scriptureRange?.start.bookName || '')
-      setStartChapter(scriptureRange?.start.chapter.toString() || '')
-      setStartVerse(scriptureRange?.start.verse.toString() || '')
-      setEndBookName(scriptureRange?.end.bookName || '')
-      setEndChapter(scriptureRange?.end.chapter.toString() || '')
-      setEndVerse(scriptureRange?.end.verse.toString() || '')
+      setRangeEnabled(!!todayScriptureRange)
+      setStartBookAbbr(todayScriptureRange?.start.bookAbbr || '')
+      setStartChapter(todayScriptureRange?.start.chapter.toString() || '')
+      setStartVerse(todayScriptureRange?.start.verse.toString() || '')
+      setEndBookAbbr(todayScriptureRange?.end.bookAbbr || '')
+      setEndChapter(todayScriptureRange?.end.chapter.toString() || '')
+      setEndVerse(todayScriptureRange?.end.verse.toString() || '')
 
       // 체크박스로 포커스
       setTimeout(() => {
@@ -56,16 +56,16 @@ export const ScriptureRangeModal = ({
         }
       }, 100)
     }
-  }, [isOpen, scriptureRange])
+  }, [isOpen, todayScriptureRange])
 
   // 시작 범위가 변경되면 끝 범위를 시작 범위로 동기화
   useEffect(() => {
     if (isStartComplete()) {
-      setEndBookName(startBookName)
+      setEndBookAbbr(startBookAbbr)
       setEndChapter(startChapter)
       setEndVerse(startVerse)
     }
-  }, [startBookName, startChapter, startVerse])
+  }, [startBookAbbr, startChapter, startVerse])
 
   useEffect(() => {
     if (!isOpen) return
@@ -87,20 +87,20 @@ export const ScriptureRangeModal = ({
       return
     }
 
-    const startBook = BIBLE_BOOKS.find((b) => b.name === startBookName)
-    const endBook = BIBLE_BOOKS.find((b) => b.name === endBookName)
+    const startBook = BIBLE_BOOKS.find((b) => b.abbr === startBookAbbr)
+    const endBook = BIBLE_BOOKS.find((b) => b.abbr === endBookAbbr)
 
     if (startBook && endBook && startChapter && startVerse && endChapter && endVerse) {
       onSave({
         start: {
           bookId: startBook.id,
-          bookName: startBook.name,
+          bookAbbr: startBook.abbr,
           chapter: parseInt(startChapter),
           verse: parseInt(startVerse)
         },
         end: {
           bookId: endBook.id,
-          bookName: endBook.name,
+          bookAbbr: endBook.abbr,
           chapter: parseInt(endChapter),
           verse: parseInt(endVerse)
         }
@@ -166,15 +166,15 @@ export const ScriptureRangeModal = ({
                     ref={startBookRef}
                     type="text"
                     list="bible-books-start"
-                    value={startBookName}
-                    onChange={(e) => setStartBookName(e.target.value)}
+                    value={startBookAbbr}
+                    onChange={(e) => setStartBookAbbr(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, startChapterRef)}
                     placeholder="책"
                     className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500"
                   />
                   <datalist id="bible-books-start">
                     {BIBLE_BOOKS.map((book) => (
-                      <option key={book.id} value={book.name} />
+                      <option key={book.id} value={book.abbr} />
                     ))}
                   </datalist>
                   <input
@@ -210,8 +210,8 @@ export const ScriptureRangeModal = ({
                     ref={endBookRef}
                     type="text"
                     list="bible-books-end"
-                    value={endBookName}
-                    onChange={(e) => setEndBookName(e.target.value)}
+                    value={endBookAbbr}
+                    onChange={(e) => setEndBookAbbr(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, endChapterRef)}
                     placeholder="책"
                     disabled={endDisabled}
@@ -223,7 +223,7 @@ export const ScriptureRangeModal = ({
                   />
                   <datalist id="bible-books-end">
                     {BIBLE_BOOKS.map((book) => (
-                      <option key={book.id} value={book.name} />
+                      <option key={book.id} value={book.abbr} />
                     ))}
                   </datalist>
                   <input

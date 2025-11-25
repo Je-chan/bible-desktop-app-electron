@@ -45,7 +45,7 @@ export const useVerseSearch = ({
     }
 
     setCurrentBookId(foundBook.id)
-    const found = await fetchVerse(foundBook.name, foundBook.id, parseInt(chapter), parseInt(verse))
+    const found = await fetchVerse(foundBook.abbr, foundBook.id, parseInt(chapter), parseInt(verse))
 
     if (!found) {
       setBook('')

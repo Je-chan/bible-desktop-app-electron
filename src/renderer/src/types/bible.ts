@@ -22,7 +22,7 @@ export interface SearchResult {
 
 export interface VersePosition {
   bookId: number
-  bookName: string
+  bookAbbr: string
   chapter: number
   verse: number
 }

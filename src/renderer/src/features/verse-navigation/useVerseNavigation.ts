@@ -55,7 +55,7 @@ export const useVerseNavigation = (currentBookId: number, setCurrentBookId: (id:
     const newBook = BIBLE_BOOKS.find((b) => b.id === newBookId)
     if (newBook) {
       setCurrentBookId(newBookId)
-      await fetchVerse(newBook.name, newBookId, newChapter, newVerse)
+      await fetchVerse(newBook.abbr, newBookId, newChapter, newVerse)
     }
   }
 

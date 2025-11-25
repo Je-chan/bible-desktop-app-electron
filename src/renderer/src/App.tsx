@@ -22,13 +22,22 @@ function App() {
   const chapterRef = useRef<HTMLInputElement>(null)
   const verseRef = useRef<HTMLInputElement>(null)
 
-  const { currentVerse, fetchVerse, currentVersion, lastViewedInRange, scriptureRange, setScriptureRange } = useBibleStore()
+  const { currentVerse, fetchVerse, currentVersion, currentScripture, todayScriptureRange, setTodayScriptureRange } = useBibleStore()
   const { settings, updateSettings, saveSettings } = useSettings()
 
   // 초기 구절 로드
   useEffect(() => {
-    fetchVerse('요한복음', 43, 3, 16)
+    fetchVerse('요', 43, 3, 16)
   }, [])
+
+  // currentVerse가 변경될 때 Footer 입력 필드 동기화
+  useEffect(() => {
+    if (currentVerse) {
+      setBook(currentVerse.book)
+      setChapter(currentVerse.chapter.toString())
+      setVerse(currentVerse.verse.toString())
+    }
+  }, [currentVerse])
 
   // 절 이동 기능
   const { navigateVerse } = useVerseNavigation(currentBookId, setCurrentBookId)
@@ -96,7 +105,7 @@ function App() {
         onKeyDown={handleKeyDown}
         onSettingsClick={() => setShowSettings(true)}
         onScriptureRangeClick={() => setShowScriptureRange(true)}
-        lastViewedInRange={lastViewedInRange?.reference}
+        currentScripture={currentScripture?.reference}
       />
 
       <SettingsModal
@@ -118,8 +127,8 @@ function App() {
 
       <ScriptureRangeModal
         isOpen={showScriptureRange}
-        scriptureRange={scriptureRange}
-        onSave={setScriptureRange}
+        todayScriptureRange={todayScriptureRange}
+        onSave={setTodayScriptureRange}
         onClose={() => setShowScriptureRange(false)}
       />
     </div>

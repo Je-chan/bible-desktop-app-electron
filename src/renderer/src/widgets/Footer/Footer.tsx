@@ -15,7 +15,7 @@ interface FooterProps {
   onKeyDown: (e: React.KeyboardEvent, field: 'book' | 'chapter' | 'verse') => void
   onSettingsClick: () => void
   onScriptureRangeClick: () => void
-  lastViewedInRange?: string | null
+  currentScripture?: string | null
 }
 
 export const Footer = ({
@@ -33,7 +33,7 @@ export const Footer = ({
   onKeyDown,
   onSettingsClick,
   onScriptureRangeClick,
-  lastViewedInRange
+  currentScripture
 }: FooterProps) => {
   return (
     <footer
@@ -88,12 +88,12 @@ export const Footer = ({
         <button
           onClick={onScriptureRangeClick}
           className="flex items-center gap-1 text-xs transition-colors hover:opacity-100"
-          style={{ color: fontColor, opacity: lastViewedInRange ? 1 : 0.5 }}
+          style={{ color: fontColor, opacity: currentScripture ? 1 : 0.5 }}
           title="본문 말씀 범위 설정 (Cmd/Ctrl+Shift+C로 이동)"
           tabIndex={-1}
         >
           <BookOpen className="w-3 h-3" />
-          {lastViewedInRange && <span>{lastViewedInRange}</span>}
+          {currentScripture && <span>{currentScripture}</span>}
         </button>
         <button
           onClick={onSettingsClick}
