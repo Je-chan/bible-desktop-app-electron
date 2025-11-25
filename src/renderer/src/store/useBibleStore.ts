@@ -6,12 +6,12 @@ interface BibleStore {
   recentSearches: SearchResult[]
   isLoading: boolean
   currentVersion: string
-  scriptureRange: ScriptureRange | null
-  lastViewedInRange: SearchResult | null
+  todayScriptureRange: ScriptureRange | null
+  currentScripture: SearchResult | null
   setCurrentVerse: (verse: SearchResult) => void
   addToRecent: (verse: SearchResult) => void
   setCurrentVersion: (version: string) => void
-  setScriptureRange: (range: ScriptureRange | null) => void
+  setTodayScriptureRange: (range: ScriptureRange | null) => void
   fetchVerse: (
     bookName: string,
     bookNumber: number,
@@ -42,8 +42,8 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   recentSearches: [],
   isLoading: false,
   currentVersion: '개역한글',
-  scriptureRange: null,
-  lastViewedInRange: null,
+  todayScriptureRange: null,
+  currentScripture: null,
 
   setCurrentVerse: (verse) => set({ currentVerse: verse }),
 
@@ -57,12 +57,12 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
 
   setCurrentVersion: (version) => set({ currentVersion: version }),
 
-  setScriptureRange: (range) => set({ scriptureRange: range, lastViewedInRange: null }),
+  setTodayScriptureRange: (range) => set({ todayScriptureRange: range, currentScripture: null }),
 
   fetchVerse: async (bookName, bookNumber, chapter, verse) => {
     set({ isLoading: true })
 
-    const { currentVersion, addToRecent, scriptureRange } = get()
+    const { currentVersion, addToRecent, todayScriptureRange } = get()
     const text = await window.bibleApi.getVerse(currentVersion, bookNumber, chapter, verse)
 
     if (text) {
@@ -74,14 +74,14 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
         reference: `${bookName} ${chapter}:${verse}`
       }
 
-      // 범위 내에 있으면 lastViewedInRange 업데이트
+      // 범위 내에 있으면 currentScripture 업데이트
       const updates: Partial<BibleStore> = {
         currentVerse: result,
         isLoading: false
       }
 
-      if (scriptureRange && isVerseInRange(bookNumber, chapter, verse, scriptureRange)) {
-        updates.lastViewedInRange = result
+      if (todayScriptureRange && isVerseInRange(bookNumber, chapter, verse, todayScriptureRange)) {
+        updates.currentScripture = result
       }
 
       set(updates as BibleStore)

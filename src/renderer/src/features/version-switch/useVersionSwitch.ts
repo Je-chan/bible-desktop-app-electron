@@ -9,18 +9,18 @@ interface UseVersionSwitchProps {
 }
 
 export const useVersionSwitch = ({ currentBookId, setFontSize, navigateVerse }: UseVersionSwitchProps) => {
-  const { currentVerse, fetchVerse, currentVersion, setCurrentVersion, lastViewedInRange, scriptureRange } =
+  const { currentVerse, fetchVerse, currentVersion, setCurrentVersion, currentScripture, todayScriptureRange } =
     useBibleStore()
 
   useEffect(() => {
     const handleGlobalKeyDown = async (e: KeyboardEvent) => {
-      // Cmd/Ctrl + Shift + C: 본문 말씀 범위 내 마지막 조회 절로 이동
+      // Cmd/Ctrl + Shift + C: 본문 말씀(currentScripture)로 이동
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'c') {
         e.preventDefault()
-        if (lastViewedInRange && scriptureRange) {
-          const book = BIBLE_BOOKS.find((b) => b.name === lastViewedInRange.book)
+        if (currentScripture && todayScriptureRange) {
+          const book = BIBLE_BOOKS.find((b) => b.abbr === currentScripture.book)
           if (book) {
-            await fetchVerse(book.name, book.id, lastViewedInRange.chapter, lastViewedInRange.verse)
+            await fetchVerse(book.abbr, book.id, currentScripture.chapter, currentScripture.verse)
           }
         }
         return
@@ -34,7 +34,7 @@ export const useVersionSwitch = ({ currentBookId, setFontSize, navigateVerse }: 
         if (currentVerse) {
           const currentBook = BIBLE_BOOKS.find((b) => b.id === currentBookId)
           if (currentBook) {
-            await fetchVerse(currentBook.name, currentBookId, currentVerse.chapter, currentVerse.verse)
+            await fetchVerse(currentBook.abbr, currentBookId, currentVerse.chapter, currentVerse.verse)
           }
         }
         return
@@ -60,5 +60,5 @@ export const useVersionSwitch = ({ currentBookId, setFontSize, navigateVerse }: 
 
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [currentVerse, currentBookId, currentVersion, navigateVerse, setFontSize, fetchVerse, setCurrentVersion, lastViewedInRange, scriptureRange])
+  }, [currentVerse, currentBookId, currentVersion, navigateVerse, setFontSize, fetchVerse, setCurrentVersion, currentScripture, todayScriptureRange])
 }
