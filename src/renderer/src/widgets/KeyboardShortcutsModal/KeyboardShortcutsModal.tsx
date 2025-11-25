@@ -1,22 +1,22 @@
 import { useEffect } from 'react'
 import { X, Keyboard } from 'lucide-react'
+import { VERSION_MAP } from '../../shared/config'
 
 interface KeyboardShortcutsModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
+// VERSION_MAP의 모든 역본을 단축키 목록으로 변환
+const versionShortcuts = Object.entries(VERSION_MAP).map(([key, version]) => ({
+  key: `Alt + ${key.toUpperCase()}`,
+  description: version
+}))
+
 const shortcuts = [
   {
     category: '역본 변경',
-    items: [
-      { key: 'Alt + R', description: '개역한글' },
-      { key: 'Alt + W', description: '개역개정' },
-      { key: 'Alt + S', description: '새번역' },
-      { key: 'Alt + E', description: '쉬운성경' },
-      { key: 'Alt + N', description: 'NIV2011' },
-      { key: 'Alt + [알파벳]', description: '기타 역본...' }
-    ]
+    items: versionShortcuts
   },
   {
     category: '화면 조절',

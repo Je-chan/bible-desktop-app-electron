@@ -1,4 +1,4 @@
-import { Settings, BookOpen } from 'lucide-react'
+import { Settings, BookOpen, Info } from 'lucide-react'
 
 interface FooterProps {
   book: string
@@ -15,6 +15,7 @@ interface FooterProps {
   onKeyDown: (e: React.KeyboardEvent, field: 'book' | 'chapter' | 'verse') => void
   onSettingsClick: () => void
   onScriptureRangeClick: () => void
+  onKeyboardShortcutsClick: () => void
   currentScripture?: string | null
 }
 
@@ -33,6 +34,7 @@ export const Footer = ({
   onKeyDown,
   onSettingsClick,
   onScriptureRangeClick,
+  onKeyboardShortcutsClick,
   currentScripture
 }: FooterProps) => {
   return (
@@ -94,6 +96,16 @@ export const Footer = ({
         >
           <BookOpen className="w-3 h-3" />
           {currentScripture && <span>{currentScripture}</span>}
+        </button>
+        <button
+          onClick={onKeyboardShortcutsClick}
+          className="p-1 transition-colors hover:opacity-80"
+          style={{ color: fontColor }}
+          tabIndex={-1}
+          aria-label="단축키"
+          title="단축키 보기"
+        >
+          <Info className="w-4 h-4" />
         </button>
         <button
           onClick={onSettingsClick}
