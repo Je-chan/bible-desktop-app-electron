@@ -63,3 +63,73 @@ export const getMaxVerse = (
   const row = stmt.get(book, chapter) as { maxVerse: number } | undefined
   return row?.maxVerse ?? 0
 }
+
+// 텍스트 검색 (범위 지정 + 페이지네이션 + 다중 키워드)
+export const searchVerses = (
+  version: string,
+  keywords: string[],
+  startBook: number = 1,
+  endBook: number = 66,
+  limit: number = 100,
+  offset: number = 0
+): Array<{ book: number; chapter: number; verse: number; text: string }> => {
+  const db = getDb(version)
+
+  // startBook > endBook이면 swap
+  const [minBook, maxBook] = startBook <= endBook ? [startBook, endBook] : [endBook, startBook]
+
+  // 빈 키워드 제외
+  const validKeywords = keywords.filter((k) => k.trim() !== '')
+  if (validKeywords.length === 0) {
+    return []
+  }
+
+  // 각 키워드에 대해 LIKE 조건 생성 (AND 조합)
+  const likeConditions = validKeywords.map(() => 'btext LIKE ?').join(' AND ')
+  const likeParams = validKeywords.map((k) => `%${k}%`)
+
+  const stmt = db.prepare(
+    `SELECT book, chapter, verse, btext as text
+     FROM Bible
+     WHERE ${likeConditions} AND book >= ? AND book <= ?
+     ORDER BY book, chapter, verse
+     LIMIT ? OFFSET ?`
+  )
+  return stmt.all(...likeParams, minBook, maxBook, limit, offset) as Array<{
+    book: number
+    chapter: number
+    verse: number
+    text: string
+  }>
+}
+
+// 검색 결과 총 개수 (범위 지정 + 다중 키워드)
+export const searchVersesCount = (
+  version: string,
+  keywords: string[],
+  startBook: number = 1,
+  endBook: number = 66
+): number => {
+  const db = getDb(version)
+
+  // startBook > endBook이면 swap
+  const [minBook, maxBook] = startBook <= endBook ? [startBook, endBook] : [endBook, startBook]
+
+  // 빈 키워드 제외
+  const validKeywords = keywords.filter((k) => k.trim() !== '')
+  if (validKeywords.length === 0) {
+    return 0
+  }
+
+  // 각 키워드에 대해 LIKE 조건 생성 (AND 조합)
+  const likeConditions = validKeywords.map(() => 'btext LIKE ?').join(' AND ')
+  const likeParams = validKeywords.map((k) => `%${k}%`)
+
+  const stmt = db.prepare(
+    `SELECT COUNT(*) as count
+     FROM Bible
+     WHERE ${likeConditions} AND book >= ? AND book <= ?`
+  )
+  const row = stmt.get(...likeParams, minBook, maxBook) as { count: number }
+  return row.count
+}

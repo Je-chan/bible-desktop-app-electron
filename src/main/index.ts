@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { getVerse, getChapter, getMaxVerse } from './database'
+import { getVerse, getChapter, getMaxVerse, searchVerses, searchVersesCount } from './database'
 import fontList from 'font-list'
 
 // 설정 스토어
@@ -94,6 +94,14 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('bible:getMaxVerse', (_, version, book, chapter) => {
     return getMaxVerse(version, book, chapter)
+  })
+
+  ipcMain.handle('bible:search', (_, version, keywords, startBook, endBook, limit, offset) => {
+    return searchVerses(version, keywords, startBook, endBook, limit, offset)
+  })
+
+  ipcMain.handle('bible:searchCount', (_, version, keywords, startBook, endBook) => {
+    return searchVersesCount(version, keywords, startBook, endBook)
   })
 
   // Settings IPC handlers

@@ -1,9 +1,25 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
+interface SearchResult {
+  book: number
+  chapter: number
+  verse: number
+  text: string
+}
+
 interface BibleApi {
   getVerse: (version: string, book: number, chapter: number, verse: number) => Promise<string | null>
   getChapter: (version: string, book: number, chapter: number) => Promise<Array<{ verse: number; text: string }>>
   getMaxVerse: (version: string, book: number, chapter: number) => Promise<number>
+  search: (
+    version: string,
+    keywords: string[],
+    startBook?: number,
+    endBook?: number,
+    limit?: number,
+    offset?: number
+  ) => Promise<SearchResult[]>
+  searchCount: (version: string, keywords: string[], startBook?: number, endBook?: number) => Promise<number>
 }
 
 interface Settings {

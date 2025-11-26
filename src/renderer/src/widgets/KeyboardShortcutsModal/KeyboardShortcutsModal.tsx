@@ -39,6 +39,21 @@ const shortcuts = [
     items: [
       { key: 'Cmd/Ctrl + Shift + C', description: '본문 말씀으로 돌아가기' }
     ]
+  },
+  {
+    category: '편집',
+    items: [
+      { key: 'Cmd/Ctrl + C', description: '현재 구절 복사' },
+      { key: 'Cmd/Ctrl + F', description: '말씀 검색' }
+    ]
+  },
+  {
+    category: '역본 비교',
+    items: [
+      { key: 'Cmd/Ctrl + B', description: '비교 패널 열기/닫기 (현재 역본)' },
+      { key: 'Alt + Shift + 알파벳', description: '해당 역본으로 비교 패널 열기' },
+      { key: 'ESC', description: '비교 패널 닫기' }
+    ]
   }
 ]
 
@@ -48,19 +63,21 @@ export const KeyboardShortcutsModal = ({ isOpen, onClose }: KeyboardShortcutsMod
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.stopPropagation()
         onClose()
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    // capture 단계에서 처리하여 다른 핸들러보다 먼저 실행
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
   }, [isOpen, onClose])
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-[500px] max-h-[600px] overflow-y-auto p-6">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl w-[500px] max-h-[600px] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Keyboard className="w-5 h-5 text-slate-700" />

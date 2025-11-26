@@ -10,7 +10,22 @@ const bibleApi = {
     ipcRenderer.invoke('bible:getChapter', version, book, chapter),
 
   getMaxVerse: (version: string, book: number, chapter: number) =>
-    ipcRenderer.invoke('bible:getMaxVerse', version, book, chapter)
+    ipcRenderer.invoke('bible:getMaxVerse', version, book, chapter),
+
+  search: (
+    version: string,
+    keywords: string[],
+    startBook?: number,
+    endBook?: number,
+    limit?: number,
+    offset?: number
+  ) =>
+    ipcRenderer.invoke('bible:search', version, keywords, startBook, endBook, limit, offset) as Promise<
+      Array<{ book: number; chapter: number; verse: number; text: string }>
+    >,
+
+  searchCount: (version: string, keywords: string[], startBook?: number, endBook?: number) =>
+    ipcRenderer.invoke('bible:searchCount', version, keywords, startBook, endBook) as Promise<number>
 }
 
 // Settings API for renderer
