@@ -2,6 +2,36 @@ import { useEffect } from 'react'
 import { VERSION_MAP, BIBLE_BOOKS } from '../../shared/config'
 import { useBibleStore } from '../../store/useBibleStore'
 
+/**
+ * Interactive 요소에 포커스가 있는지 확인
+ * 방향키 등의 단축키가 이런 요소들의 기본 동작을 방해하지 않도록 함
+ */
+const isInteractiveElementFocused = (): boolean => {
+  const activeElement = document.activeElement
+  if (!activeElement || activeElement === document.body) return false
+
+  const tag = activeElement.tagName
+
+  // 폼 요소들
+  if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(tag)) return true
+
+  // contenteditable 요소
+  if (activeElement.getAttribute('contenteditable') === 'true') return true
+
+  // ARIA role로 interactive 요소 판별
+  const role = activeElement.getAttribute('role')
+  if (role) {
+    const interactiveRoles = [
+      'textbox', 'listbox', 'slider', 'spinbutton',
+      'combobox', 'option', 'menuitem', 'menu', 'menubar',
+      'tab', 'tablist', 'switch', 'searchbox'
+    ]
+    if (interactiveRoles.includes(role)) return true
+  }
+
+  return false
+}
+
 interface UseVersionSwitchProps {
   currentBookId: number
   setFontSize: React.Dispatch<React.SetStateAction<number>>
@@ -98,8 +128,9 @@ export const useVersionSwitch = ({ currentBookId, setFontSize, navigateVerse }: 
         return
       }
 
-      // 입력 필드에 포커스가 있으면 무시
-      if (document.activeElement?.tagName === 'INPUT') return
+      // Interactive 요소에 포커스가 있으면 방향키 단축키 무시
+      // (SELECT option 탐색, range 조절, button 키보드 조작 등이 정상 동작하도록)
+      if (isInteractiveElementFocused()) return
 
       if (e.key === 'ArrowDown') {
         e.preventDefault()
