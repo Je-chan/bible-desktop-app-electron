@@ -8,10 +8,18 @@ interface BibleStore {
   currentVersion: string
   todayScriptureRange: ScriptureRange | null
   currentScripture: SearchResult | null
+  // 역본 비교 관련
+  isCompareOpen: boolean
+  comparedVersion: string
+  comparedVerse: SearchResult | null
   setCurrentVerse: (verse: SearchResult) => void
   addToRecent: (verse: SearchResult) => void
   setCurrentVersion: (version: string) => void
   setTodayScriptureRange: (range: ScriptureRange | null) => void
+  // 역본 비교 관련
+  setCompareOpen: (isOpen: boolean) => void
+  setComparedVersion: (version: string) => void
+  fetchComparedVerse: (bookNumber: number, chapter: number, verse: number) => Promise<void>
   fetchVerse: (
     bookName: string,
     bookNumber: number,
@@ -44,6 +52,10 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   currentVersion: '개역한글',
   todayScriptureRange: null,
   currentScripture: null,
+  // 역본 비교 관련
+  isCompareOpen: false,
+  comparedVersion: '개역한글',
+  comparedVerse: null,
 
   setCurrentVerse: (verse) => set({ currentVerse: verse }),
 
@@ -59,10 +71,34 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
 
   setTodayScriptureRange: (range) => set({ todayScriptureRange: range, currentScripture: null }),
 
+  // 역본 비교 관련
+  setCompareOpen: (isOpen) => set({ isCompareOpen: isOpen }),
+
+  setComparedVersion: (version) => set({ comparedVersion: version }),
+
+  fetchComparedVerse: async (bookNumber, chapter, verse) => {
+    const { comparedVersion, currentVerse } = get()
+    const text = await window.bibleApi.getVerse(comparedVersion, bookNumber, chapter, verse)
+
+    if (text && currentVerse) {
+      set({
+        comparedVerse: {
+          book: currentVerse.book,
+          chapter,
+          verse,
+          text,
+          reference: `${currentVerse.book} ${chapter}:${verse}`
+        }
+      })
+    } else {
+      set({ comparedVerse: null })
+    }
+  },
+
   fetchVerse: async (bookName, bookNumber, chapter, verse) => {
     set({ isLoading: true })
 
-    const { currentVersion, addToRecent, todayScriptureRange } = get()
+    const { currentVersion, addToRecent, todayScriptureRange, isCompareOpen, fetchComparedVerse } = get()
     const text = await window.bibleApi.getVerse(currentVersion, bookNumber, chapter, verse)
 
     if (text) {
@@ -86,6 +122,12 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
 
       set(updates as BibleStore)
       addToRecent(result)
+
+      // 비교 뷰가 열려있으면 비교 구절도 함께 fetch
+      if (isCompareOpen) {
+        await fetchComparedVerse(bookNumber, chapter, verse)
+      }
+
       return true
     } else {
       set({ isLoading: false })

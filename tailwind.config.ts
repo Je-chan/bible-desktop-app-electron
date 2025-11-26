@@ -17,6 +17,20 @@ export default {
           800: '#2f3d8a',
           900: '#1e2870'
         }
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease-out',
+        'slide-in': 'slideIn 0.3s ease-out'
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translate(-50%, 10px)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, 0)' }
+        },
+        slideIn: {
+          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' }
+        }
       }
     }
   },
