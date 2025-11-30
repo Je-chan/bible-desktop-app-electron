@@ -40,7 +40,7 @@ export const Footer = ({
   return (
     <footer
       className="h-10 border-t flex items-center justify-between px-6"
-      style={{ backgroundColor, borderColor: fontColor }}
+      style={{ backgroundColor, borderColor: backgroundColor }}
     >
       <div className="flex items-center gap-3 text-sm" style={{ color: fontColor }}>
         <div className="flex items-center gap-1">
@@ -53,7 +53,7 @@ export const Footer = ({
             onKeyDown={(e) => onKeyDown(e, 'book')}
             tabIndex={1}
             className="w-16 px-2 py-1 rounded text-sm focus:outline-none border"
-            style={{ backgroundColor, color: fontColor, borderColor: fontColor }}
+            style={{ backgroundColor, color: fontColor, borderColor: backgroundColor }}
             aria-label="성경 책 이름"
           />
         </div>
@@ -67,7 +67,7 @@ export const Footer = ({
             onKeyDown={(e) => onKeyDown(e, 'chapter')}
             tabIndex={2}
             className="w-16 px-2 py-1 rounded text-sm focus:outline-none border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{ backgroundColor, color: fontColor, borderColor: fontColor }}
+            style={{ backgroundColor, color: fontColor, borderColor: backgroundColor }}
             aria-label="장"
           />
         </div>
@@ -81,7 +81,7 @@ export const Footer = ({
             onKeyDown={(e) => onKeyDown(e, 'verse')}
             tabIndex={3}
             className="w-16 px-2 py-1 rounded text-sm focus:outline-none border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{ backgroundColor, color: fontColor, borderColor: fontColor }}
+            style={{ backgroundColor, color: fontColor, borderColor: backgroundColor }}
             aria-label="절"
           />
         </div>
