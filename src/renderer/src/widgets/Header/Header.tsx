@@ -19,7 +19,7 @@ export const Header = ({ currentVerse, currentVersion, backgroundColor, fontColo
   return (
     <header
       className="h-12 border-b flex items-center justify-center px-6"
-      style={{ backgroundColor, borderColor: fontColor }}
+      style={{ backgroundColor, borderColor: backgroundColor }}
     >
       <div className="flex items-center gap-2" style={{ color: fontColor }}>
         <Book className="w-4 h-4" />
