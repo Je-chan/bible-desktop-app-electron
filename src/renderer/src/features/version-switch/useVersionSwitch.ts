@@ -5,10 +5,14 @@ import { useBibleStore } from '../../store/useBibleStore'
 /**
  * Interactive 요소에 포커스가 있는지 확인
  * 방향키 등의 단축키가 이런 요소들의 기본 동작을 방해하지 않도록 함
+ * 단, data-allow-arrow-navigation 속성이 있는 요소는 방향키 네비게이션 허용
  */
 const isInteractiveElementFocused = (): boolean => {
   const activeElement = document.activeElement
   if (!activeElement || activeElement === document.body) return false
+
+  // data-allow-arrow-navigation 속성이 있으면 방향키 단축키 허용
+  if (activeElement.getAttribute('data-allow-arrow-navigation') === 'true') return false
 
   const tag = activeElement.tagName
 
