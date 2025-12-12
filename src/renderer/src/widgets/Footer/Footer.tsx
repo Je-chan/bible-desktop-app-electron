@@ -55,6 +55,7 @@ export const Footer = ({
             className="w-16 px-2 py-1 rounded text-sm focus:outline-none border"
             style={{ backgroundColor, color: fontColor, borderColor: backgroundColor }}
             aria-label="성경 책 이름"
+            data-allow-arrow-navigation="true"
           />
         </div>
         <div className="flex items-center gap-1">
@@ -69,6 +70,7 @@ export const Footer = ({
             className="w-16 px-2 py-1 rounded text-sm focus:outline-none border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             style={{ backgroundColor, color: fontColor, borderColor: backgroundColor }}
             aria-label="장"
+            data-allow-arrow-navigation="true"
           />
         </div>
         <div className="flex items-center gap-1">
@@ -83,6 +85,7 @@ export const Footer = ({
             className="w-16 px-2 py-1 rounded text-sm focus:outline-none border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             style={{ backgroundColor, color: fontColor, borderColor: backgroundColor }}
             aria-label="절"
+            data-allow-arrow-navigation="true"
           />
         </div>
       </div>
