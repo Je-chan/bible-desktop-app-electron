@@ -9,6 +9,7 @@ export const VERSION_MAP: Record<string, string> = {
   f: '현대어',
   q: '쉬운말',
   a: '우리말',
+  p: '공동번역',
   n: 'NIV2011',
   m: 'NIV1984',
   k: 'NKJV',
