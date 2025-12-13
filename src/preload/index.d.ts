@@ -39,6 +39,12 @@ interface FontsApi {
   list: () => Promise<string[]>
 }
 
+interface ImeApi {
+  getStatus: () => Promise<'per-thread' | 'global' | 'not-windows'>
+  setGlobal: () => Promise<boolean>
+  isWindows: () => Promise<boolean>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -46,5 +52,6 @@ declare global {
     bibleApi: BibleApi
     settingsApi: SettingsApi
     fontsApi: FontsApi
+    imeApi: ImeApi
   }
 }
