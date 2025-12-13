@@ -40,6 +40,13 @@ const fontsApi = {
   list: () => ipcRenderer.invoke('fonts:list') as Promise<string[]>
 }
 
+// IME API for renderer (Windows IME 설정 관련)
+const imeApi = {
+  getStatus: () => ipcRenderer.invoke('ime:getStatus') as Promise<'per-thread' | 'global' | 'not-windows'>,
+  setGlobal: () => ipcRenderer.invoke('ime:setGlobal') as Promise<boolean>,
+  isWindows: () => ipcRenderer.invoke('ime:isWindows') as Promise<boolean>
+}
+
 // Custom APIs for renderer
 const api = {}
 
@@ -53,6 +60,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('bibleApi', bibleApi)
     contextBridge.exposeInMainWorld('settingsApi', settingsApi)
     contextBridge.exposeInMainWorld('fontsApi', fontsApi)
+    contextBridge.exposeInMainWorld('imeApi', imeApi)
   } catch (error) {
     console.error(error)
   }
@@ -67,4 +75,6 @@ if (process.contextIsolated) {
   window.settingsApi = settingsApi
   // @ts-ignore (define in dts)
   window.fontsApi = fontsApi
+  // @ts-ignore (define in dts)
+  window.imeApi = imeApi
 }

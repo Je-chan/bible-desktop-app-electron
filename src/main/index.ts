@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { execSync } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { getVerse, getChapter, getMaxVerse, searchVerses, searchVersesCount } from './database'
@@ -28,6 +29,52 @@ const initStore = async () => {
       paddingX: 48
     }
   })
+}
+
+// Windows IME 레지스트리 관련 함수들
+const REGISTRY_PATH = 'HKCU\\Control Panel\\Input Method'
+const REGISTRY_KEY = 'EnablePerThreadInputMethod'
+
+/**
+ * Windows IME 설정 상태 확인
+ * @returns 'per-thread' (앱마다 다른 IME) | 'global' (전역 IME) | 'not-windows'
+ */
+function getIMESettingStatus(): 'per-thread' | 'global' | 'not-windows' {
+  if (process.platform !== 'win32') {
+    return 'not-windows'
+  }
+
+  try {
+    const result = execSync(`reg query "${REGISTRY_PATH}" /v ${REGISTRY_KEY}`, {
+      encoding: 'utf-8',
+      windowsHide: true
+    })
+    // REG_SZ 값이 1이면 per-thread (앱마다 다른 IME 사용)
+    return result.includes('0x1') || result.includes('REG_SZ    1') ? 'per-thread' : 'global'
+  } catch {
+    // 키가 없으면 기본값은 per-thread (Windows 8+ 기본 동작)
+    return 'per-thread'
+  }
+}
+
+/**
+ * Windows IME 설정을 전역 모드로 변경
+ * @returns 성공 여부
+ */
+function setIMEToGlobal(): boolean {
+  if (process.platform !== 'win32') {
+    return false
+  }
+
+  try {
+    execSync(`reg add "${REGISTRY_PATH}" /v ${REGISTRY_KEY} /t REG_SZ /d 0 /f`, {
+      encoding: 'utf-8',
+      windowsHide: true
+    })
+    return true
+  } catch {
+    return false
+  }
 }
 
 function createWindow(): void {
@@ -121,6 +168,19 @@ app.whenReady().then(async () => {
     const fonts = await fontList.getFonts()
     // 따옴표 제거하고 정렬
     return fonts.map((f) => f.replace(/"/g, '')).sort()
+  })
+
+  // Windows IME 설정 관련 핸들러
+  ipcMain.handle('ime:getStatus', () => {
+    return getIMESettingStatus()
+  })
+
+  ipcMain.handle('ime:setGlobal', () => {
+    return setIMEToGlobal()
+  })
+
+  ipcMain.handle('ime:isWindows', () => {
+    return process.platform === 'win32'
   })
 
   createWindow()
