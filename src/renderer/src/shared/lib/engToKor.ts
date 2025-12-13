@@ -1,6 +1,10 @@
 /**
  * 영문 자판 입력을 한글로 변환하는 유틸리티
  * 두벌식 키보드 기준
+ *
+ * 점진적 입력 지원:
+ * - 이미 변환된 완성형 한글과 새 영문이 섞여도 정상 동작
+ * - 예: "사f" → "살", "살w" → "살ㅈ" → "살저"
  */
 
 // 영문 키 → 한글 자모 매핑
@@ -156,6 +160,76 @@ const isJamo = (char: string): boolean => {
   return code >= 0x3131 && code <= 0x3163
 }
 
+// 완성형 한글인지 확인
+const isCompleteHangul = (char: string): boolean => {
+  const code = char.charCodeAt(0)
+  return code >= 0xac00 && code <= 0xd7a3
+}
+
+// 복합 종성을 단일 자음 2개로 분리
+const DOUBLE_JONGSUNG_SPLIT: Record<string, [string, string]> = {
+  ㄳ: ['ㄱ', 'ㅅ'],
+  ㄵ: ['ㄴ', 'ㅈ'],
+  ㄶ: ['ㄴ', 'ㅎ'],
+  ㄺ: ['ㄹ', 'ㄱ'],
+  ㄻ: ['ㄹ', 'ㅁ'],
+  ㄼ: ['ㄹ', 'ㅂ'],
+  ㄽ: ['ㄹ', 'ㅅ'],
+  ㄾ: ['ㄹ', 'ㅌ'],
+  ㄿ: ['ㄹ', 'ㅍ'],
+  ㅀ: ['ㄹ', 'ㅎ'],
+  ㅄ: ['ㅂ', 'ㅅ']
+}
+
+// 복합 모음을 단일 모음 2개로 분리
+const DOUBLE_JUNGSUNG_SPLIT: Record<string, [string, string]> = {
+  ㅘ: ['ㅗ', 'ㅏ'],
+  ㅙ: ['ㅗ', 'ㅐ'],
+  ㅚ: ['ㅗ', 'ㅣ'],
+  ㅝ: ['ㅜ', 'ㅓ'],
+  ㅞ: ['ㅜ', 'ㅔ'],
+  ㅟ: ['ㅜ', 'ㅣ'],
+  ㅢ: ['ㅡ', 'ㅣ']
+}
+
+// 완성형 한글을 자모로 분해
+const decomposeHangul = (char: string): string[] => {
+  const code = char.charCodeAt(0)
+  if (code < 0xac00 || code > 0xd7a3) {
+    return [char]
+  }
+
+  const offset = code - 0xac00
+  const choIndex = Math.floor(offset / (21 * 28))
+  const jungIndex = Math.floor((offset % (21 * 28)) / 28)
+  const jongIndex = offset % 28
+
+  const result: string[] = []
+
+  // 초성
+  result.push(CHOSUNG[choIndex])
+
+  // 중성 (복합 모음이면 분리)
+  const jung = JUNGSUNG[jungIndex]
+  if (DOUBLE_JUNGSUNG_SPLIT[jung]) {
+    result.push(...DOUBLE_JUNGSUNG_SPLIT[jung])
+  } else {
+    result.push(jung)
+  }
+
+  // 종성 (있으면, 복합 종성이면 분리)
+  if (jongIndex > 0) {
+    const jong = JONGSUNG[jongIndex]
+    if (DOUBLE_JONGSUNG_SPLIT[jong]) {
+      result.push(...DOUBLE_JONGSUNG_SPLIT[jong])
+    } else {
+      result.push(jong)
+    }
+  }
+
+  return result
+}
+
 // 자음인지 확인
 const isConsonant = (char: string): boolean => {
   return CHOSUNG.includes(char) || char === 'ㄳ' || char === 'ㄵ' || char === 'ㄶ'
@@ -190,6 +264,7 @@ const composeHangul = (cho: string, jung: string, jong: string = ''): string => 
 
 /**
  * 영문 문자열을 한글로 변환
+ * 점진적 입력 지원: 이미 변환된 완성형 한글도 분해하여 처리
  */
 export function engToKor(input: string): string {
   // 영문자가 포함되어 있는지 확인
@@ -197,12 +272,17 @@ export function engToKor(input: string): string {
     return input
   }
 
-  // 영문 → 자모 변환
+  // 영문 → 자모 변환 (완성형 한글은 분해)
   const jamos: string[] = []
   for (const char of input) {
     if (ENG_TO_JAMO[char]) {
+      // 영문 → 자모
       jamos.push(ENG_TO_JAMO[char])
+    } else if (isCompleteHangul(char)) {
+      // 완성형 한글 → 자모로 분해
+      jamos.push(...decomposeHangul(char))
     } else {
+      // 자모 또는 기타 문자는 그대로
       jamos.push(char)
     }
   }

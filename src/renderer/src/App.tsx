@@ -6,6 +6,7 @@ import { useVerseSearch } from './features/verse-search'
 import { useVersionSwitch } from './features/version-switch'
 import { useVerseCopy } from './features/verse-copy'
 import { BIBLE_BOOKS } from './shared/config'
+import { engToKor } from './shared/lib'
 import { Header } from './widgets/Header'
 import { VerseContent } from './widgets/VerseContent'
 import { Footer } from './widgets/Footer'
@@ -235,7 +236,7 @@ function App() {
         bookRef={bookRef}
         chapterRef={chapterRef}
         verseRef={verseRef}
-        onBookChange={setBook}
+        onBookChange={(value) => setBook(engToKor(value))}
         onChapterChange={setChapter}
         onVerseChange={setVerse}
         onKeyDown={handleKeyDown}
