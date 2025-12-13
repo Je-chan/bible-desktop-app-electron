@@ -41,23 +41,15 @@ CREATE TABLE Bible (
 
 import Database from 'better-sqlite3'
 
-// 버전별 DB 인스턴스 캐시
-const dbInstances = new Map<string, Database.Database>()
+// DB 인스턴스 캐싱 (성능 최적화)
+const dbCache = new Map<string, Database.Database>()
 
-const getDatabase = (version: string): Database.Database => {
-  // 캐시에 있으면 재사용
-  if (dbInstances.has(version)) {
-    return dbInstances.get(version)!
+const getDb = (version: string): Database.Database => {
+  if (!dbCache.has(version)) {
+    const dbPath = getDbPath(`${version}.bdb`)
+    dbCache.set(version, new Database(dbPath, { readonly: true }))
   }
-
-  // 없으면 새로 열기
-  const dbPath = path.join(process.resourcesPath, 'bible', `${version}.bdb`)
-  const db = new Database(dbPath, { readonly: true })
-
-  // 캐시에 저장
-  dbInstances.set(version, db)
-
-  return db
+  return dbCache.get(version)!
 }
 ```
 
@@ -78,8 +70,20 @@ ipcMain.handle('bible:getVerse', (_, version, bookId, chapter, verse) => {
   return getVerse(version, bookId, chapter, verse)
 })
 
-ipcMain.handle('bible:searchVerses', (_, version, keywords, start, end, limit, offset) => {
+ipcMain.handle('bible:getChapter', (_, version, bookId, chapter) => {
+  return getChapter(version, bookId, chapter)
+})
+
+ipcMain.handle('bible:getMaxVerse', (_, version, bookId, chapter) => {
+  return getMaxVerse(version, bookId, chapter)
+})
+
+ipcMain.handle('bible:search', (_, version, keywords, start, end, limit, offset) => {
   return searchVerses(version, keywords, start, end, limit, offset)
+})
+
+ipcMain.handle('bible:searchCount', (_, version, keywords, start, end) => {
+  return searchVersesCount(version, keywords, start, end)
 })
 ```
 
@@ -89,20 +93,50 @@ ipcMain.handle('bible:searchVerses', (_, version, keywords, start, end, limit, o
 // src/preload/index.ts
 
 const bibleApi = {
-  getVerse: (version: string, bookId: number, chapter: number, verse: number) =>
-    ipcRenderer.invoke('bible:getVerse', version, bookId, chapter, verse),
+  getVerse: (version: string, book: number, chapter: number, verse: number) =>
+    ipcRenderer.invoke('bible:getVerse', version, book, chapter, verse),
 
-  searchVerses: (
+  getChapter: (version: string, book: number, chapter: number) =>
+    ipcRenderer.invoke('bible:getChapter', version, book, chapter),
+
+  getMaxVerse: (version: string, book: number, chapter: number) =>
+    ipcRenderer.invoke('bible:getMaxVerse', version, book, chapter),
+
+  search: (
     version: string,
     keywords: string[],
-    startBook: number,
-    endBook: number,
-    limit: number,
-    offset: number
-  ) => ipcRenderer.invoke('bible:searchVerses', version, keywords, startBook, endBook, limit, offset)
+    startBook?: number,
+    endBook?: number,
+    limit?: number,
+    offset?: number
+  ) => ipcRenderer.invoke('bible:search', version, keywords, startBook, endBook, limit, offset),
+
+  searchCount: (version: string, keywords: string[], startBook?: number, endBook?: number) =>
+    ipcRenderer.invoke('bible:searchCount', version, keywords, startBook, endBook)
+}
+
+// 설정 API
+const settingsApi = {
+  get: () => ipcRenderer.invoke('settings:get'),
+  set: (settings: Partial<Settings>) => ipcRenderer.invoke('settings:set', settings)
+}
+
+// 시스템 폰트 목록 API
+const fontsApi = {
+  list: () => ipcRenderer.invoke('fonts:list')
+}
+
+// Windows IME 설정 API
+const imeApi = {
+  getStatus: () => ipcRenderer.invoke('ime:getStatus'),
+  setGlobal: () => ipcRenderer.invoke('ime:setGlobal'),
+  isWindows: () => ipcRenderer.invoke('ime:isWindows')
 }
 
 contextBridge.exposeInMainWorld('bibleApi', bibleApi)
+contextBridge.exposeInMainWorld('settingsApi', settingsApi)
+contextBridge.exposeInMainWorld('fontsApi', fontsApi)
+contextBridge.exposeInMainWorld('imeApi', imeApi)
 ```
 
 ### Renderer 사용
@@ -110,6 +144,9 @@ contextBridge.exposeInMainWorld('bibleApi', bibleApi)
 ```typescript
 // React 컴포넌트에서
 const verse = await window.bibleApi.getVerse('개역한글', 43, 3, 16)
+const results = await window.bibleApi.search('개역한글', ['사랑', '하나님'], 1, 66, 100, 0)
+const settings = await window.settingsApi.get()
+const fonts = await window.fontsApi.list()
 ```
 
 ## 쿼리 함수들
@@ -121,17 +158,16 @@ const verse = await window.bibleApi.getVerse('개역한글', 43, 3, 16)
 ```typescript
 export const getVerse = (
   version: string,
-  bookId: number,
+  book: number,
   chapter: number,
   verse: number
-) => {
-  const db = getDatabase(version)
-  const stmt = db.prepare(`
-    SELECT book, chapter, verse, btext as text
-    FROM Bible
-    WHERE book = ? AND chapter = ? AND verse = ?
-  `)
-  return stmt.get(bookId, chapter, verse)
+): string | null => {
+  const db = getDb(version)
+  const stmt = db.prepare(
+    'SELECT btext FROM Bible WHERE book = ? AND chapter = ? AND verse = ?'
+  )
+  const row = stmt.get(book, chapter, verse) as { btext: string } | undefined
+  return row?.btext ?? null
 }
 ```
 
@@ -142,16 +178,15 @@ export const getVerse = (
 ```typescript
 export const getMaxVerse = (
   version: string,
-  bookId: number,
+  book: number,
   chapter: number
-) => {
-  const db = getDatabase(version)
-  const stmt = db.prepare(`
-    SELECT MAX(verse) as maxVerse
-    FROM Bible
-    WHERE book = ? AND chapter = ?
-  `)
-  return stmt.get(bookId, chapter)?.maxVerse ?? 0
+): number => {
+  const db = getDb(version)
+  const stmt = db.prepare(
+    'SELECT MAX(verse) as maxVerse FROM Bible WHERE book = ? AND chapter = ?'
+  )
+  const row = stmt.get(book, chapter) as { maxVerse: number } | undefined
+  return row?.maxVerse ?? 0
 }
 ```
 
@@ -159,7 +194,7 @@ export const getMaxVerse = (
 
 ### searchVerses
 
-다중 키워드 검색:
+다중 키워드 검색 (페이지네이션 지원):
 
 ```typescript
 export const searchVerses = (
@@ -169,27 +204,61 @@ export const searchVerses = (
   endBook: number = 66,
   limit: number = 100,
   offset: number = 0
-) => {
-  const db = getDatabase(version)
+): Array<{ book: number; chapter: number; verse: number; text: string }> => {
+  const db = getDb(version)
+
+  // startBook > endBook이면 swap
+  const [minBook, maxBook] = startBook <= endBook ? [startBook, endBook] : [endBook, startBook]
 
   // 빈 키워드 필터링
   const validKeywords = keywords.filter((k) => k.trim() !== '')
   if (validKeywords.length === 0) return []
 
-  // 동적 WHERE 생성
+  // 동적 WHERE 생성 (AND 조건)
   const likeConditions = validKeywords.map(() => 'btext LIKE ?').join(' AND ')
   const likeParams = validKeywords.map((k) => `%${k}%`)
 
   const stmt = db.prepare(`
     SELECT book, chapter, verse, btext as text
     FROM Bible
-    WHERE book >= ? AND book <= ?
-      AND ${likeConditions}
+    WHERE ${likeConditions} AND book >= ? AND book <= ?
     ORDER BY book, chapter, verse
     LIMIT ? OFFSET ?
   `)
 
-  return stmt.all(startBook, endBook, ...likeParams, limit, offset)
+  return stmt.all(...likeParams, minBook, maxBook, limit, offset)
+}
+```
+
+### searchVersesCount
+
+검색 결과 총 개수:
+
+```typescript
+export const searchVersesCount = (
+  version: string,
+  keywords: string[],
+  startBook: number = 1,
+  endBook: number = 66
+): number => {
+  const db = getDb(version)
+
+  const [minBook, maxBook] = startBook <= endBook ? [startBook, endBook] : [endBook, startBook]
+
+  const validKeywords = keywords.filter((k) => k.trim() !== '')
+  if (validKeywords.length === 0) return 0
+
+  const likeConditions = validKeywords.map(() => 'btext LIKE ?').join(' AND ')
+  const likeParams = validKeywords.map((k) => `%${k}%`)
+
+  const stmt = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM Bible
+    WHERE ${likeConditions} AND book >= ? AND book <= ?
+  `)
+
+  const row = stmt.get(...likeParams, minBook, maxBook) as { count: number }
+  return row.count
 }
 ```
 

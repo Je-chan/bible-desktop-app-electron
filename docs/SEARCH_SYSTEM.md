@@ -176,7 +176,7 @@ const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
 
 // 추가 로드
 const loadMore = async () => {
-  const newResults = await window.bibleApi.searchVerses(
+  const newResults = await window.bibleApi.search(
     version, keywords, startBook, endBook, LIMIT, offset
   )
 
