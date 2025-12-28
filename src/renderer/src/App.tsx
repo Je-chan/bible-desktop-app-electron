@@ -152,6 +152,7 @@ function App() {
   // 키보드 단축키 (버전 변경, 폰트 크기, 절 이동)
   useVersionSwitch({
     currentBookId,
+    setCurrentBookId,
     setFontSize: (updater) => {
       if (typeof updater === 'function') {
         updateSettings({ fontSize: updater(settings.fontSize) })

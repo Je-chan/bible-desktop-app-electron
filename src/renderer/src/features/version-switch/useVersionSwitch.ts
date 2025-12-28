@@ -38,11 +38,12 @@ const isInteractiveElementFocused = (): boolean => {
 
 interface UseVersionSwitchProps {
   currentBookId: number
+  setCurrentBookId: (id: number) => void
   setFontSize: React.Dispatch<React.SetStateAction<number>>
   navigateVerse: (direction: 1 | -1) => Promise<void>
 }
 
-export const useVersionSwitch = ({ currentBookId, setFontSize, navigateVerse }: UseVersionSwitchProps) => {
+export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize, navigateVerse }: UseVersionSwitchProps) => {
   const {
     currentVerse,
     fetchVerse,
@@ -65,6 +66,7 @@ export const useVersionSwitch = ({ currentBookId, setFontSize, navigateVerse }: 
         if (currentScripture && todayScriptureRange) {
           const book = BIBLE_BOOKS.find((b) => b.abbr === currentScripture.book)
           if (book) {
+            setCurrentBookId(book.id) // 화살표 이동을 위해 currentBookId도 업데이트
             await fetchVerse(book.abbr, book.id, currentScripture.chapter, currentScripture.verse)
           }
         }
@@ -156,6 +158,7 @@ export const useVersionSwitch = ({ currentBookId, setFontSize, navigateVerse }: 
   }, [
     currentVerse,
     currentBookId,
+    setCurrentBookId,
     currentVersion,
     navigateVerse,
     setFontSize,
