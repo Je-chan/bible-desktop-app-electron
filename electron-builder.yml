@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: bible-desktop-app-electron
+appId: com.yedarmbible.app
+productName: YeDarmBible
 directories:
   buildResources: build
 files:
@@ -17,7 +17,7 @@ extraResources:
     filter:
       - "**/*.bdb"
 win:
-  executableName: bible-desktop-app-electron
+  executableName: YeDarmBible
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

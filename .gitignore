@@ -6,4 +6,5 @@ out
 *.log*
 .idea/
 pnpm-lock.yaml
-resources/*
+resources/bible/*
+build
