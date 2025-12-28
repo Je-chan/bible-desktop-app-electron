@@ -28,6 +28,8 @@ interface Settings {
   fontSize: number
   fontColor: string
   paddingX: number
+  paddingY: number
+  headerFontSize: number
 }
 
 interface SettingsApi {

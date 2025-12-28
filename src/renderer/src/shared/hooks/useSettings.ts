@@ -6,6 +6,8 @@ export interface SettingsState {
   fontSize: number
   fontColor: string
   paddingX: number
+  paddingY: number
+  headerFontSize: number
   systemFonts: string[]
 }
 
@@ -16,6 +18,8 @@ export const useSettings = () => {
     fontSize: 30,
     fontColor: '#1e293b',
     paddingX: 48,
+    paddingY: 0,
+    headerFontSize: 14,
     systemFonts: []
   })
 
@@ -30,6 +34,8 @@ export const useSettings = () => {
         fontSize: savedSettings.fontSize,
         fontColor: savedSettings.fontColor,
         paddingX: savedSettings.paddingX,
+        paddingY: savedSettings.paddingY ?? 0,
+        headerFontSize: savedSettings.headerFontSize ?? 14,
         systemFonts: fonts
       })
     }
