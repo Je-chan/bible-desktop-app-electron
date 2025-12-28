@@ -1,5 +1,11 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { Settings, BookOpen, Info } from 'lucide-react'
+import { VERSION_MAP } from '../../shared/config'
+
+// 버전 단축키 목록 (버전명 기준 정렬)
+const VERSION_SHORTCUTS = Object.entries(VERSION_MAP)
+  .map(([key, name]) => ({ key: key.toUpperCase(), name }))
+  .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 
 type FieldType = 'book' | 'chapter' | 'verse'
 
@@ -277,6 +283,15 @@ export const Footer = ({
             {verse || '\u00A0'}
           </div>
         </div>
+      </div>
+
+      {/* 버전 단축키 표시 */}
+      <div className="flex-1 flex items-center justify-center gap-2 text-xs overflow-hidden mx-4" style={{ color: fontColor, opacity: 0.5 }}>
+        {VERSION_SHORTCUTS.map(({ key, name }) => (
+          <span key={key} className="whitespace-nowrap">
+            {name}({key})
+          </span>
+        ))}
       </div>
 
       <div className="flex items-center gap-3">
