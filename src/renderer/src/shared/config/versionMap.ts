@@ -11,8 +11,7 @@ export const VERSION_MAP: Record<string, string> = {
   a: '우리말',
   p: '공동번역',
   n: 'NIV2011',
-  m: 'NIV1984',
-  k: 'NKJV',
+  k: 'KJV1769',
   c: '바른성경',
   v: '베트남',
   b: '베트남2'
