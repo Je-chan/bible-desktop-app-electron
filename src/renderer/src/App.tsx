@@ -26,9 +26,7 @@ function App() {
   const [showCopyToast, setShowCopyToast] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
 
-  const bookRef = useRef<HTMLInputElement>(null)
-  const chapterRef = useRef<HTMLInputElement>(null)
-  const verseRef = useRef<HTMLInputElement>(null)
+  const masterInputRef = useRef<HTMLInputElement>(null)
 
   const {
     currentVerse,
@@ -88,10 +86,7 @@ function App() {
 
       // Footer input이 focused인지 확인
       const activeElement = document.activeElement
-      const isFooterInputFocused =
-        activeElement === bookRef.current ||
-        activeElement === chapterRef.current ||
-        activeElement === verseRef.current
+      const isFooterInputFocused = activeElement === masterInputRef.current
 
       if (isFooterInputFocused && activeElement instanceof HTMLElement) {
         activeElement.blur()
@@ -168,15 +163,12 @@ function App() {
   })
 
   // 검색 기능
-  const { handleKeyDown } = useVerseSearch({
+  const { handleSearch } = useVerseSearch({
     book,
     chapter,
     verse,
     setBook,
-    setCurrentBookId,
-    bookRef,
-    chapterRef,
-    verseRef
+    setCurrentBookId
   })
 
   // 설정 저장 및 모달 닫기
@@ -232,13 +224,11 @@ function App() {
         verse={verse}
         backgroundColor={settings.backgroundColor}
         fontColor={settings.fontColor}
-        bookRef={bookRef}
-        chapterRef={chapterRef}
-        verseRef={verseRef}
+        masterInputRef={masterInputRef}
         onBookChange={setBook}
         onChapterChange={setChapter}
         onVerseChange={setVerse}
-        onKeyDown={handleKeyDown}
+        onSearch={handleSearch}
         onSettingsClick={() => setShowSettings(true)}
         onScriptureRangeClick={() => setShowScriptureRange(true)}
         onKeyboardShortcutsClick={() => setShowKeyboardShortcuts(true)}

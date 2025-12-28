@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { findBook } from '../../shared/config'
 import { useBibleStore } from '../../store/useBibleStore'
 
@@ -7,9 +8,6 @@ interface UseVerseSearchProps {
   verse: string
   setBook: (value: string) => void
   setCurrentBookId: (id: number) => void
-  bookRef: React.RefObject<HTMLInputElement | null>
-  chapterRef: React.RefObject<HTMLInputElement | null>
-  verseRef: React.RefObject<HTMLInputElement | null>
 }
 
 export const useVerseSearch = ({
@@ -17,30 +15,18 @@ export const useVerseSearch = ({
   chapter,
   verse,
   setBook,
-  setCurrentBookId,
-  bookRef,
-  chapterRef,
-  verseRef
+  setCurrentBookId
 }: UseVerseSearchProps) => {
   const { fetchVerse } = useBibleStore()
 
-  const handleSearch = async () => {
-    if (!book) {
-      bookRef.current?.focus()
-      return
-    }
-    if (!chapter) {
-      chapterRef.current?.focus()
-      return
-    }
-    if (!verse) {
-      verseRef.current?.focus()
+  const handleSearch = useCallback(async () => {
+    if (!book || !chapter || !verse) {
       return
     }
 
     const foundBook = findBook(book)
     if (!foundBook) {
-      bookRef.current?.focus()
+      setBook('')
       return
     }
 
@@ -49,23 +35,8 @@ export const useVerseSearch = ({
 
     if (!found) {
       setBook('')
-      bookRef.current?.focus()
     }
-  }
+  }, [book, chapter, verse, setBook, setCurrentBookId, fetchVerse])
 
-  const handleKeyDown = (e: React.KeyboardEvent, field: 'book' | 'chapter' | 'verse') => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleSearch()
-      ;(e.target as HTMLInputElement).blur()
-    } else if (e.key === 'Tab' && !e.shiftKey && field === 'verse') {
-      e.preventDefault()
-      if (book && chapter && verse) {
-        handleSearch()
-      }
-      ;(e.target as HTMLInputElement).blur()
-    }
-  }
-
-  return { handleSearch, handleKeyDown }
+  return { handleSearch }
 }
