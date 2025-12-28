@@ -155,9 +155,14 @@ app.whenReady().then(async () => {
     return searchVersesCount(version, keywords, startBook, endBook)
   })
 
-  // Settings IPC handlers
+  // Settings IPC handlers (async)
   ipcMain.handle('settings:get', () => {
     return store.store
+  })
+
+  // Settings IPC handler (sync) - for preload initial load
+  ipcMain.on('settings:getSync', (event) => {
+    event.returnValue = store.store
   })
 
   ipcMain.handle('settings:set', (_, settings: Partial<Settings>) => {

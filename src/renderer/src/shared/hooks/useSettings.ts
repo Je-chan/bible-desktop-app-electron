@@ -11,35 +11,31 @@ export interface SettingsState {
   systemFonts: string[]
 }
 
-export const useSettings = () => {
-  const [settings, setSettings] = useState<SettingsState>({
-    backgroundColor: '#f8fafc',
-    fontFamily: 'serif',
-    fontSize: 30,
-    fontColor: '#1e293b',
-    paddingX: 48,
-    paddingY: 0,
-    headerFontSize: 14,
+// Preload에서 동기적으로 로드한 설정을 초기값으로 사용
+const getInitialSettings = (): SettingsState => {
+  const saved = window.settingsApi.getInitial()
+  return {
+    backgroundColor: saved.backgroundColor,
+    fontFamily: saved.fontFamily,
+    fontSize: saved.fontSize,
+    fontColor: saved.fontColor,
+    paddingX: saved.paddingX,
+    paddingY: saved.paddingY ?? 0,
+    headerFontSize: saved.headerFontSize ?? 14,
     systemFonts: []
-  })
+  }
+}
 
+export const useSettings = () => {
+  const [settings, setSettings] = useState<SettingsState>(getInitialSettings)
+
+  // 시스템 폰트 목록만 비동기로 로드
   useEffect(() => {
-    const loadSettings = async () => {
-      const savedSettings = await window.settingsApi.get()
+    const loadFonts = async () => {
       const fonts = await window.fontsApi.list()
-
-      setSettings({
-        backgroundColor: savedSettings.backgroundColor,
-        fontFamily: savedSettings.fontFamily,
-        fontSize: savedSettings.fontSize,
-        fontColor: savedSettings.fontColor,
-        paddingX: savedSettings.paddingX,
-        paddingY: savedSettings.paddingY ?? 0,
-        headerFontSize: savedSettings.headerFontSize ?? 14,
-        systemFonts: fonts
-      })
+      setSettings(prev => ({ ...prev, systemFonts: fonts }))
     }
-    loadSettings()
+    loadFonts()
   }, [])
 
   const updateSettings = (updates: Partial<Omit<SettingsState, 'systemFonts'>>) => {

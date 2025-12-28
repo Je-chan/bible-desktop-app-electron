@@ -33,6 +33,7 @@ interface Settings {
 }
 
 interface SettingsApi {
+  getInitial: () => Settings
   get: () => Promise<Settings>
   set: (settings: Partial<Settings>) => Promise<Settings>
 }
