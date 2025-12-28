@@ -185,6 +185,7 @@ function App() {
         currentVersion={currentVersion}
         backgroundColor={settings.backgroundColor}
         fontColor={settings.fontColor}
+        headerFontSize={settings.headerFontSize}
       />
 
       {/* 메인 컨텐츠 영역 - 스플릿 뷰 */}
@@ -197,6 +198,7 @@ function App() {
             fontFamily={settings.fontFamily}
             fontColor={settings.fontColor}
             paddingX={settings.paddingX}
+            paddingY={settings.paddingY}
           />
         </div>
 
@@ -243,12 +245,16 @@ function App() {
         fontSize={settings.fontSize}
         fontColor={settings.fontColor}
         paddingX={settings.paddingX}
+        paddingY={settings.paddingY}
+        headerFontSize={settings.headerFontSize}
         systemFonts={settings.systemFonts}
         onBackgroundColorChange={(color) => updateSettings({ backgroundColor: color })}
         onFontFamilyChange={(font) => updateSettings({ fontFamily: font })}
         onFontSizeChange={(size) => updateSettings({ fontSize: size })}
         onFontColorChange={(color) => updateSettings({ fontColor: color })}
         onPaddingXChange={(padding) => updateSettings({ paddingX: padding })}
+        onPaddingYChange={(padding) => updateSettings({ paddingY: padding })}
+        onHeaderFontSizeChange={(size) => updateSettings({ headerFontSize: size })}
         onSave={handleSaveSettings}
         onClose={() => setShowSettings(false)}
       />

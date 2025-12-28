@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
-import { X, ChevronDown, Check, Search, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
+import { useEffect, useState, useRef, useMemo } from 'react'
+import { X, ChevronDown, Check, Search } from 'lucide-react'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -8,12 +8,16 @@ interface SettingsModalProps {
   fontSize: number
   fontColor: string
   paddingX: number
+  paddingY: number
+  headerFontSize: number
   systemFonts: string[]
   onBackgroundColorChange: (color: string) => void
   onFontFamilyChange: (font: string) => void
   onFontSizeChange: (size: number) => void
   onFontColorChange: (color: string) => void
   onPaddingXChange: (padding: number) => void
+  onPaddingYChange: (padding: number) => void
+  onHeaderFontSizeChange: (size: number) => void
   onSave: () => void
   onClose: () => void
 }
@@ -34,24 +38,22 @@ export const SettingsModal = ({
   fontSize,
   fontColor,
   paddingX,
+  paddingY,
+  headerFontSize,
   systemFonts,
   onBackgroundColorChange,
   onFontFamilyChange,
   onFontSizeChange,
   onFontColorChange,
   onPaddingXChange,
+  onPaddingYChange,
+  onHeaderFontSizeChange,
   onSave,
   onClose
 }: SettingsModalProps) => {
   const [fontDropdownOpen, setFontDropdownOpen] = useState(false)
   const [fontSearch, setFontSearch] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(0)
-
-  // Windows IME 설정 관련 상태
-  const [isWindows, setIsWindows] = useState(false)
-  const [imeStatus, setImeStatus] = useState<'per-thread' | 'global' | 'not-windows' | 'loading'>('loading')
-  const [imeChanging, setImeChanging] = useState(false)
-  const [imeChangeResult, setImeChangeResult] = useState<'success' | 'error' | null>(null)
 
   const fontDropdownRef = useRef<HTMLDivElement>(null)
   const fontSearchRef = useRef<HTMLInputElement>(null)
@@ -117,49 +119,8 @@ export const SettingsModal = ({
     if (!isOpen) {
       setFontDropdownOpen(false)
       setFontSearch('')
-      setImeChangeResult(null)
     }
   }, [isOpen])
-
-  // Windows IME 상태 로드
-  useEffect(() => {
-    const loadImeStatus = async () => {
-      try {
-        const isWin = await window.imeApi.isWindows()
-        setIsWindows(isWin)
-        if (isWin) {
-          const status = await window.imeApi.getStatus()
-          setImeStatus(status)
-        } else {
-          setImeStatus('not-windows')
-        }
-      } catch {
-        setImeStatus('not-windows')
-      }
-    }
-    if (isOpen) {
-      loadImeStatus()
-    }
-  }, [isOpen])
-
-  // IME 설정을 전역 모드로 변경
-  const handleImeOptimize = useCallback(async () => {
-    setImeChanging(true)
-    setImeChangeResult(null)
-    try {
-      const success = await window.imeApi.setGlobal()
-      if (success) {
-        setImeStatus('global')
-        setImeChangeResult('success')
-      } else {
-        setImeChangeResult('error')
-      }
-    } catch {
-      setImeChangeResult('error')
-    } finally {
-      setImeChanging(false)
-    }
-  }, [])
 
   // 하이라이트된 항목이 보이도록 스크롤
   useEffect(() => {
@@ -352,62 +313,35 @@ export const SettingsModal = ({
             />
           </div>
 
-          {/* Windows 한글 입력 최적화 (Windows에서만 표시) */}
-          {isWindows && (
-            <div className="pt-4 border-t border-slate-200">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                한글 입력 최적화
-              </label>
-              <div className="bg-slate-50 rounded-lg p-3">
-                {imeStatus === 'loading' ? (
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>설정 확인 중...</span>
-                  </div>
-                ) : imeStatus === 'global' ? (
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>최적화됨</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2 text-sm text-amber-600">
-                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <span>입력 필드 간 이동 시 한글 모드가 초기화될 수 있습니다.</span>
-                    </div>
-                    <button
-                      onClick={handleImeOptimize}
-                      disabled={imeChanging}
-                      className="w-full mt-2 px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {imeChanging ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>설정 변경 중...</span>
-                        </>
-                      ) : (
-                        <span>지금 최적화하기</span>
-                      )}
-                    </button>
-                  </div>
-                )}
-                {imeChangeResult === 'success' && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
-                    설정이 변경되었습니다. 완전한 적용을 위해 <strong>재부팅</strong>이 필요합니다.
-                  </div>
-                )}
-                {imeChangeResult === 'error' && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                    설정 변경에 실패했습니다. 수동으로 설정해주세요.
-                  </div>
-                )}
-              </div>
-              <p className="mt-2 text-xs text-slate-500">
-                Windows 설정 → 시간 및 언어 → 입력 → 고급 키보드 설정에서
-                &quot;앱 창마다 다른 입력 방법 사용&quot; 옵션을 끄면 동일한 효과가 있습니다.
-              </p>
-            </div>
-          )}
+          {/* 상하 여백 */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              상하 여백: {paddingY}px
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="200"
+              value={paddingY}
+              onChange={(e) => onPaddingYChange(parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+
+          {/* 헤더 폰트 크기 */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              헤더 폰트 크기: {headerFontSize}px
+            </label>
+            <input
+              type="range"
+              min="12"
+              max="32"
+              value={headerFontSize}
+              onChange={(e) => onHeaderFontSizeChange(parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
