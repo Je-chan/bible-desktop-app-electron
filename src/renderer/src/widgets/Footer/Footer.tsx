@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { Settings, BookOpen, Info } from 'lucide-react'
+import { Settings, BookOpen, Info, Maximize2, Minimize2 } from 'lucide-react'
 import { VERSION_MAP } from '../../shared/config'
 
 // 버전 단축키 목록 (버전명 기준 정렬)
@@ -43,6 +43,7 @@ export const Footer = ({
   currentScripture
 }: FooterProps) => {
   const [activeField, setActiveField] = useState<FieldType>('book')
+  const [isKiosk, setIsKiosk] = useState(true)
 
   // 각 필드 위치를 추적하기 위한 refs
   const bookDivRef = useRef<HTMLDivElement>(null)
@@ -94,6 +95,17 @@ export const Footer = ({
   // 초기 마운트 후 위치 계산을 위한 리렌더링
   useEffect(() => {
     setRenderTrigger(1)
+  }, [])
+
+  // 초기 Kiosk 상태 확인
+  useEffect(() => {
+    window.windowApi.isKiosk().then(setIsKiosk)
+  }, [])
+
+  // Kiosk 모드 토글
+  const handleToggleKiosk = useCallback(async () => {
+    const newState = await window.windowApi.toggleKiosk()
+    setIsKiosk(newState)
   }, [])
 
   // 윈도우 리사이즈 시 리렌더링 트리거
@@ -314,6 +326,16 @@ export const Footer = ({
           title="단축키 보기"
         >
           <Info className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleToggleKiosk}
+          className="p-1 transition-colors hover:opacity-80"
+          style={{ color: fontColor }}
+          tabIndex={-1}
+          aria-label={isKiosk ? '창 모드로 전환' : '전체화면으로 전환'}
+          title={isKiosk ? '창 모드로 전환' : '전체화면으로 전환'}
+        >
+          {isKiosk ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
         </button>
         <button
           onClick={onSettingsClick}

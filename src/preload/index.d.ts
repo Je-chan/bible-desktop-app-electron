@@ -48,6 +48,11 @@ interface ImeApi {
   isWindows: () => Promise<boolean>
 }
 
+interface WindowApi {
+  isKiosk: () => Promise<boolean>
+  toggleKiosk: () => Promise<boolean>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -56,5 +61,6 @@ declare global {
     settingsApi: SettingsApi
     fontsApi: FontsApi
     imeApi: ImeApi
+    windowApi: WindowApi
   }
 }
