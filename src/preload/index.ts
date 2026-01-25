@@ -66,6 +66,12 @@ const imeApi = {
   isWindows: () => ipcRenderer.invoke('ime:isWindows') as Promise<boolean>
 }
 
+// Window API for renderer (창 모드 관련)
+const windowApi = {
+  isKiosk: () => ipcRenderer.invoke('window:isKiosk') as Promise<boolean>,
+  toggleKiosk: () => ipcRenderer.invoke('window:toggleKiosk') as Promise<boolean>
+}
+
 // Custom APIs for renderer
 const api = {}
 
@@ -80,6 +86,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('settingsApi', settingsApi)
     contextBridge.exposeInMainWorld('fontsApi', fontsApi)
     contextBridge.exposeInMainWorld('imeApi', imeApi)
+    contextBridge.exposeInMainWorld('windowApi', windowApi)
   } catch (error) {
     console.error(error)
   }
@@ -96,4 +103,6 @@ if (process.contextIsolated) {
   window.fontsApi = fontsApi
   // @ts-ignore (define in dts)
   window.imeApi = imeApi
+  // @ts-ignore (define in dts)
+  window.windowApi = windowApi
 }

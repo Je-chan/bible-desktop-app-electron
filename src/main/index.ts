@@ -81,9 +81,11 @@ function setIMEToGlobal(): boolean {
   }
 }
 
+let mainWindow: BrowserWindow | null = null
+
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -190,6 +192,18 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('ime:isWindows', () => {
     return process.platform === 'win32'
+  })
+
+  // 창 모드 관련 핸들러
+  ipcMain.handle('window:isKiosk', () => {
+    return mainWindow?.isKiosk() ?? false
+  })
+
+  ipcMain.handle('window:toggleKiosk', () => {
+    if (!mainWindow) return false
+    const isKiosk = mainWindow.isKiosk()
+    mainWindow.setKiosk(!isKiosk)
+    return !isKiosk
   })
 
   createWindow()
