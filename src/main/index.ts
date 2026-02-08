@@ -13,6 +13,8 @@ interface Settings {
   fontSize: number
   fontColor: string
   paddingX: number
+  paddingY: number
+  headerFontSize: number
 }
 
 // electron-store는 ESM이므로 동적 import 필요
@@ -26,7 +28,9 @@ const initStore = async () => {
       fontFamily: 'serif',
       fontSize: 30,
       fontColor: '#1e293b', // slate-800
-      paddingX: 48
+      paddingX: 48,
+      paddingY: 0,
+      headerFontSize: 14
     }
   })
 }
@@ -77,9 +81,11 @@ function setIMEToGlobal(): boolean {
   }
 }
 
+let mainWindow: BrowserWindow | null = null
+
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -151,9 +157,14 @@ app.whenReady().then(async () => {
     return searchVersesCount(version, keywords, startBook, endBook)
   })
 
-  // Settings IPC handlers
+  // Settings IPC handlers (async)
   ipcMain.handle('settings:get', () => {
     return store.store
+  })
+
+  // Settings IPC handler (sync) - for preload initial load
+  ipcMain.on('settings:getSync', (event) => {
+    event.returnValue = store.store
   })
 
   ipcMain.handle('settings:set', (_, settings: Partial<Settings>) => {
@@ -181,6 +192,18 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('ime:isWindows', () => {
     return process.platform === 'win32'
+  })
+
+  // 창 모드 관련 핸들러
+  ipcMain.handle('window:isKiosk', () => {
+    return mainWindow?.isKiosk() ?? false
+  })
+
+  ipcMain.handle('window:toggleKiosk', () => {
+    if (!mainWindow) return false
+    const isKiosk = mainWindow.isKiosk()
+    mainWindow.setKiosk(!isKiosk)
+    return !isKiosk
   })
 
   createWindow()

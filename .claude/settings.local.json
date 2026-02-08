@@ -3,7 +3,12 @@
     "allow": [
       "WebSearch",
       "Bash(pnpm run typecheck:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(pnpm rebuild:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm run typecheck:web:*)",
+      "Bash(npx electron-icon-builder:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
