@@ -73,13 +73,13 @@ Windows IME는 **HIMC (Input Method Context)** 라는 구조체에 한글/영문
    └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
-4. Input에서 Blur (핵심 문제 지점)
+4. Input에서 Blur ⚠️ 핵심 문제 지점
    ┌─────────────────────────────────────────────────────────────────┐
    │ Chromium ime_input.cc:                                         │
    │                                                                 │
    │   void ImeInput::DisableIME(HWND window_handle) {              │
    │     CleanupComposition(window_handle);                         │
-   │     ImmAssociateContextEx(window_handle, NULL, 0);             │
+   │     ImmAssociateContextEx(window_handle, NULL, 0);  ← 💥       │
    │   }                                                             │
    │                                                                 │
    │ → HIMC와 window의 연결이 해제됨                                 │
@@ -87,7 +87,7 @@ Windows IME는 **HIMC (Input Method Context)** 라는 구조체에 한글/영문
    └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
-5. 다시 Input에 Focus (문제 발생)
+5. 다시 Input에 Focus ⚠️ 문제 발생
    ┌─────────────────────────────────────────────────────────────────┐
    │ Chromium:                                                       │
    │   ImmAssociateContextEx(window_handle, NULL, IACE_DEFAULT)     │
@@ -95,9 +95,46 @@ Windows IME는 **HIMC (Input Method Context)** 라는 구조체에 한글/영문
    │ → "기본" context가 다시 연결됨                                  │
    │ → 기본 context의 conversion mode = 영문 (초기값)                │
    │                                                                 │
-   │ 이전에 설정한 한글 모드가 사라짐!                               │
+   │ 💥 이전에 설정한 한글 모드가 사라짐!                            │
    └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Chromium의 설계 철학
+
+```cpp
+// Chromium 소스 (ui/base/win/ime_input.cc)
+void ImeInput::DisableIME(HWND window_handle) {
+  // A renderer process have moved its input focus to a password input
+  // when there is an ongoing composition, e.g. a user has clicked a
+  // mouse button and selected a password input while composing a text.
+  // For this case, we have to complete the ongoing composition and
+  // clean up the resources attached to this object BEFORE DISABLING THE IME.
+  CleanupComposition(window_handle);
+  ::ImmAssociateContextEx(window_handle, NULL, 0);
+}
+```
+
+Chromium은 보안과 일관성을 위해 **focus가 빠질 때 IME context를 명시적으로 해제**합니다:
+
+- Password 필드로 이동 시 IME 조합 문자가 남아있으면 안 됨
+- 웹 페이지 간 IME 상태가 공유되면 안 됨
+
+### Windows의 기본 동작
+
+```
+IACE_DEFAULT 플래그로 context 복원 시:
+→ 시스템 기본 conversion mode로 리셋
+→ Korean IME의 기본값 = 영문 (A)
+```
+
+### macOS와의 차이
+
+| 플랫폼 | IME 상태 관리 | Focus 변경 시 |
+|--------|--------------|---------------|
+| **macOS** | 시스템 전역 관리 | 상태 유지됨 |
+| **Windows** | Per-context 관리 | Context 리셋 시 초기화 |
+
+macOS는 IME 상태를 **시스템 레벨**에서 전역으로 관리하기 때문에 앱이나 input 간 전환에도 상태가 유지됩니다.
 
 ### 근본 원인 요약
 
@@ -128,9 +165,142 @@ Windows IME는 **HIMC (Input Method Context)** 라는 구조체에 한글/영문
 - [Microsoft: ImmSetConversionStatus](https://learn.microsoft.com/en-us/windows/win32/api/imm/nf-imm-immsetconversionstatus)
 - [Microsoft: IME mode model changes](https://learn.microsoft.com/en-us/windows/win32/w8cookbook/ime-mode-model-changed-from-per-user-to-per-thread)
 
-## 해결 방법
+---
 
-### 근본적 해결의 한계
+## 시도했던 해결책들 (실패)
+
+### 1. Ghost Input 방식 (실패)
+
+#### 접근 방식
+
+```tsx
+// App.tsx
+<input
+  ref={ghostInputRef}
+  type="text"
+  tabIndex={-1}
+  className="fixed -top-[100px] left-0 w-px h-px opacity-0"
+/>
+
+// useVerseSearch.ts
+if (e.key === 'Enter') {
+  await handleSearch()
+  ghostInputRef.current?.focus() // blur 대신 숨겨진 input으로 focus 이동
+}
+```
+
+Focus를 "유령" input으로 이동시켜 IME context를 유지하려는 시도였습니다.
+
+#### 실패 원인
+
+Ghost input 방식이 IME 문제를 해결하지 못한 이유는 **focus 이동 자체가 문제**이기 때문입니다:
+
+```
+[절 input] --blur--> [ghost input] --focus-->
+     ↓                      ↓
+Chromium 호출:         새 IME context 연결
+ImmAssociateContextEx   (기본값: 영문)
+(hwnd, NULL, 0)
+```
+
+Ghost input이 화면 밖에 숨겨져 있어도(`fixed -top-[100px] opacity-0`), 이것은 **시각적** 숨김일 뿐입니다. **논리적으로는** 여전히:
+
+1. 원래 input에서 blur 이벤트 발생
+2. Chromium이 IME context 해제
+3. Ghost input에 focus 시 **새로운 기본 context**(영문) 연결
+
+핵심은 **Chromium 레벨에서 blur 시점에 IME context가 초기화된다**는 것입니다.
+
+---
+
+### 2. 조건부 렌더링 마스터 Input (실패)
+
+#### 접근 방식
+
+```tsx
+// Footer.tsx - 조건부 렌더링 방식
+const [currentField, setCurrentField] = useState<Field>('book')
+
+// 현재 필드에만 input을 렌더링하고, 나머지는 div로 표시
+{currentField === 'book' ? (
+  <input ref={masterInputRef} value={book} ... />  // 마운트
+) : (
+  <div onClick={() => setCurrentField('book')}>{book}</div>  // input 언마운트
+)}
+
+{currentField === 'chapter' ? (
+  <input ref={masterInputRef} value={chapter} ... />  // 마운트
+) : (
+  <div>{chapter}</div>  // input 언마운트
+)}
+```
+
+Focus를 절대 이동하지 않으면 IME가 리셋되지 않을 것이라 예상하여, 하나의 `masterInputRef`를 세 개의 input 중 현재 활성화된 것에만 연결하는 방식을 시도했습니다.
+
+#### 실패 원인: DOM 요소 교체로 인한 암묵적 Blur
+
+**핵심 문제**: 조건부 렌더링(`{condition ? <input /> : <div />}`)은 **DOM 요소를 완전히 교체**합니다.
+
+```
+시간 ────────────────────────────────────────────────────────────────►
+
+1. currentField = 'book'
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ DOM 상태:                                                       │
+   │   [input#book (focused)] [div#chapter] [div#verse]             │
+   │                                                                 │
+   │ masterInputRef → input#book                                    │
+   │ IME context가 input#book에 연결됨                               │
+   └─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ Tab 키 → setCurrentField('chapter')
+                              ▼
+2. React 렌더링 (currentField = 'chapter')
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ React가 수행하는 작업:                                          │
+   │                                                                 │
+   │   1. input#book을 DOM에서 제거 (unmount)                        │
+   │      → 💥 브라우저가 암묵적으로 focus를 잃은 것으로 처리         │
+   │      → 💥 Chromium이 ImmAssociateContextEx(hwnd, NULL, 0) 호출  │
+   │      → 💥 IME context 해제                                      │
+   │                                                                 │
+   │   2. 새로운 input#chapter를 DOM에 삽입 (mount)                  │
+   │      → 완전히 새로운 DOM 요소                                   │
+   │      → 새로운 IME context 연결 (기본값: 영문)                   │
+   │                                                                 │
+   │ 결과 DOM:                                                       │
+   │   [div#book] [input#chapter (새 요소)] [div#verse]             │
+   └─────────────────────────────────────────────────────────────────┘
+```
+
+#### 왜 같은 ref를 공유해도 소용없는가
+
+```tsx
+// 같은 masterInputRef를 사용하지만...
+{currentField === 'book' && <input ref={masterInputRef} />}
+{currentField === 'chapter' && <input ref={masterInputRef} />}
+```
+
+`ref`는 **참조(포인터)**일 뿐입니다. ref가 같아도:
+- 이전 input이 DOM에서 제거되면 브라우저는 focus loss를 감지
+- 새 input이 DOM에 추가되면 **새로운 native element**로 인식
+- Windows IME 입장에서는 "다른 입력 필드"
+
+---
+
+### 실패한 방법들의 공통 문제
+
+| 시도 | 방식 | 실패 원인 |
+|------|------|----------|
+| Ghost Input | focus를 숨겨진 input으로 이동 | blur 발생 → IME 리셋 |
+| 조건부 렌더링 | 현재 필드만 input 렌더링 | DOM 요소 제거 → 암묵적 blur → IME 리셋 |
+| 3개 독립 Input | 일반적인 Tab 이동 | focus 이동 → blur 발생 → IME 리셋 |
+
+모든 방식이 **"DOM 요소가 바뀌거나 focus가 이동하면 IME가 리셋된다"**는 동일한 문제에 부딪힙니다.
+
+---
+
+### 검토했으나 불가능한 방법들
 
 #### 왜 프로그래밍으로 해결하기 어려운가?
 
@@ -138,9 +308,7 @@ Microsoft 공식 문서에 명시된 내용:
 
 > "Beginning with Windows 8: By default, the input switch is set per user instead of per thread. The Microsoft IME (Japanese) respects the mode globally, and therefore **ImmSetConversionStatus fails when getting focus**."
 
-Windows 8 이후부터 Microsoft가 **의도적으로** 앱이 IME 모드를 프로그래밍적으로 변경하는 것을 막았습니다. 사용자의 IME 설정을 앱이 임의로 바꾸는 것을 원치 않기 때문입니다.
-
-#### 검토했으나 불가능한 방법들
+Windows 8 이후부터 Microsoft가 **의도적으로** 앱이 IME 모드를 프로그래밍적으로 변경하는 것을 막았습니다.
 
 | 방법 | 불가능한 이유 |
 |------|--------------|
@@ -149,210 +317,47 @@ Windows 8 이후부터 Microsoft가 **의도적으로** 앱이 IME 모드를 프
 | **InputScope** | input 힌트 역할만, 한/영 강제 전환 불가 |
 | **TSF (Text Services Framework)** | IMM32 대체이나 구현 매우 복잡, 같은 제한 적용 |
 
-### 적용된 해결책 1: 영문 → 한글 자동 변환 (engToKor)
+#### 웹 표준 속성의 한계
 
-IME가 영문 상태여도 두벌식 키보드 배열로 입력하면 자동으로 한글로 변환됩니다.
+- `inputMode` 속성: 모바일 가상 키보드 타입 힌트만 제공, 데스크톱 IME에는 영향 없음
+- `lang` 속성: 콘텐츠 언어 선언용, IME 동작 제어 불가
+- CSS `ime-mode`: deprecated, Chrome/Electron에서 미지원
 
-#### 핵심 기능: 점진적 입력 지원
+#### 결론
 
-기존 문제: 영문 모드에서 "살전"을 입력하면 "사ㄹ저ㄴ"으로 잘못 조합됨
+Chromium의 IME context 관리 방식 + Windows API 제한이 결합된 문제로, **앱 레벨에서 완벽하게 해결하기가 구조적으로 불가능**합니다.
 
-원인: onChange 이벤트마다 engToKor이 호출되는데, 이미 변환된 완성형 한글("사")과 새 영문("f")이 섞이면서 조합이 깨짐
+### 적용된 우회 해결책: 영문 → 한글 자동 변환
 
-해결: **완성형 한글을 자모로 분해한 후 재조합**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     핵심 원리                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  IME 리셋의 원인 = Focus 이동 또는 DOM 요소 변경                 │
+│                                                                 │
+│  해결책 = Focus를 절대 이동하지 않고, DOM 요소도 바꾸지 않음     │
+│                                                                 │
+│  구현 = 단일 Input을 항상 DOM에 유지하고 CSS로 위치만 변경       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ```typescript
 // src/renderer/src/shared/lib/engToKor.ts
 
-// 완성형 한글을 자모로 분해
-const decomposeHangul = (char: string): string[] => {
-  const code = char.charCodeAt(0)
-  if (code < 0xac00 || code > 0xd7a3) {
-    return [char]
-  }
-
-  const offset = code - 0xac00
-  const choIndex = Math.floor(offset / (21 * 28))
-  const jungIndex = Math.floor((offset % (21 * 28)) / 28)
-  const jongIndex = offset % 28
-
-  const result: string[] = []
-  result.push(CHOSUNG[choIndex])
-
-  // 복합 모음 분리
-  const jung = JUNGSUNG[jungIndex]
-  if (DOUBLE_JUNGSUNG_SPLIT[jung]) {
-    result.push(...DOUBLE_JUNGSUNG_SPLIT[jung])
-  } else {
-    result.push(jung)
-  }
-
-  // 복합 종성 분리
-  if (jongIndex > 0) {
-    const jong = JONGSUNG[jongIndex]
-    if (DOUBLE_JONGSUNG_SPLIT[jong]) {
-      result.push(...DOUBLE_JONGSUNG_SPLIT[jong])
-    } else {
-      result.push(jong)
-    }
-  }
-
-  return result
-}
-
 export function engToKor(input: string): string {
+  // 영문자가 포함되어 있는지 확인
   if (!/[a-zA-Z]/.test(input)) {
     return input
   }
 
-  // 영문 → 자모 변환 (완성형 한글은 분해)
-  const jamos: string[] = []
-  for (const char of input) {
-    if (ENG_TO_JAMO[char]) {
-      jamos.push(ENG_TO_JAMO[char])
-    } else if (isCompleteHangul(char)) {
-      jamos.push(...decomposeHangul(char))  // 완성형 한글 분해!
-    } else {
-      jamos.push(char)
-    }
-  }
-
-  // 자모 조합...
-}
-```
-
-#### 동작 흐름 (점진적 입력)
-
-| 입력 | input 값 | engToKor 처리 | 결과 |
-|------|----------|--------------|------|
-| t | "t" | ㅅ | "ㅅ" |
-| k | "ㅅk" | ㅅ+ㅏ → 사 | "사" |
-| f | "사f" | 사→ㅅㅏ + ㄹ → 살 | "살" |
-| w | "살w" | 살→ㅅㅏㄹ + ㅈ | "살ㅈ" |
-| j | "살ㅈj" | ... + ㅓ → 살저 | "살저" |
-| s | "살저s" | ... + ㄴ → 살전 | "살전" |
-
-#### 적용 위치
-
-```typescript
-// src/renderer/src/App.tsx
-
-import { engToKor } from './shared/lib'
-
-<Footer
+  // 영문 → 자모 변환 → 한글 조합
   // ...
-  onBookChange={(value) => setBook(engToKor(value))}
-  // ...
-/>
+}
 ```
 
-### 적용된 해결책 2: Windows IME 설정 최적화 (선택)
-
-환경설정(SettingsModal)에서 Windows 레지스트리 설정을 변경하여 IME 동작을 개선할 수 있습니다.
-
-#### 구현
-
-**Main Process (src/main/index.ts)**:
-
-```typescript
-const REGISTRY_PATH = 'HKCU\\Control Panel\\Input Method'
-const REGISTRY_KEY = 'EnablePerThreadInputMethod'
-
-// IME 설정 상태 확인
-function getIMESettingStatus(): 'per-thread' | 'global' | 'not-windows' {
-  if (process.platform !== 'win32') return 'not-windows'
-
-  try {
-    const result = execSync(`reg query "${REGISTRY_PATH}" /v ${REGISTRY_KEY}`, {
-      encoding: 'utf-8',
-      windowsHide: true
-    })
-    return result.includes('0x1') ? 'per-thread' : 'global'
-  } catch {
-    return 'per-thread'
-  }
-}
-
-// IME 설정을 전역 모드로 변경
-function setIMEToGlobal(): boolean {
-  if (process.platform !== 'win32') return false
-
-  try {
-    execSync(`reg add "${REGISTRY_PATH}" /v ${REGISTRY_KEY} /t REG_SZ /d 0 /f`, {
-      encoding: 'utf-8',
-      windowsHide: true
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-// IPC 핸들러
-ipcMain.handle('ime:getStatus', () => getIMESettingStatus())
-ipcMain.handle('ime:setGlobal', () => setIMEToGlobal())
-ipcMain.handle('ime:isWindows', () => process.platform === 'win32')
-```
-
-**Preload (src/preload/index.ts)**:
-
-```typescript
-const imeApi = {
-  getStatus: () => ipcRenderer.invoke('ime:getStatus'),
-  setGlobal: () => ipcRenderer.invoke('ime:setGlobal'),
-  isWindows: () => ipcRenderer.invoke('ime:isWindows')
-}
-
-contextBridge.exposeInMainWorld('imeApi', imeApi)
-```
-
-**SettingsModal UI**:
-
-Windows에서만 "한글 입력 최적화" 섹션이 표시되며, 현재 설정 상태를 확인하고 최적화 버튼을 통해 레지스트리를 변경할 수 있습니다. 변경 후 **재부팅이 필요**합니다.
-
-#### 한계
-
-레지스트리 설정은 **앱 간** IME 상태 공유를 제어하지만, **Chromium 내부**의 input 간 focus 이동 시 IME 리셋은 별개의 문제입니다. 따라서 engToKor 우회 방식이 더 효과적입니다.
-
-## 두벌식 키보드 매핑
-
-### 자음
-
-| 영문 | 한글 | 영문 (Shift) | 한글 (쌍자음) |
-|------|------|--------------|---------------|
-| q | ㅂ | Q | ㅃ |
-| w | ㅈ | W | ㅉ |
-| e | ㄷ | E | ㄸ |
-| r | ㄱ | R | ㄲ |
-| t | ㅅ | T | ㅆ |
-| a | ㅁ | | |
-| s | ㄴ | | |
-| d | ㅇ | | |
-| f | ㄹ | | |
-| g | ㅎ | | |
-| z | ㅋ | | |
-| x | ㅌ | | |
-| c | ㅊ | | |
-| v | ㅍ | | |
-
-### 모음
-
-| 영문 | 한글 | 영문 (Shift) | 한글 |
-|------|------|--------------|------|
-| y | ㅛ | | |
-| u | ㅕ | | |
-| i | ㅑ | | |
-| o | ㅐ | O | ㅒ |
-| p | ㅔ | P | ㅖ |
-| h | ㅗ | | |
-| j | ㅓ | | |
-| k | ㅏ | | |
-| l | ㅣ | | |
-| b | ㅠ | | |
-| n | ㅜ | | |
-| m | ㅡ | | |
-
-## 변환 예시
+#### 변환 예시
 
 | 영문 입력 | 한글 변환 | 설명 |
 |----------|----------|------|
@@ -362,18 +367,214 @@ Windows에서만 "한글 입력 최적화" 섹션이 표시되며, 현재 설정
 | `ele` | 딛 | 디도서 |
 | `elawjs` | 딤전 | 디모데전서 |
 
+```tsx
+// src/renderer/src/widgets/Footer/Footer.tsx
+
+export const Footer = ({ book, chapter, verse, masterInputRef, onSearch, ... }) => {
+  const [activeField, setActiveField] = useState<'book' | 'chapter' | 'verse'>('book')
+
+<Footer
+  // ...
+}
+```
+
+#### 위치 계산 및 스타일 적용
+
+```tsx
+// 마스터 Input 위치 계산
+const updateInputPosition = useCallback(() => {
+  let targetRef: React.RefObject<HTMLDivElement | null>
+  switch (activeField) {
+    case 'book':
+      targetRef = bookDivRef
+      break
+    case 'chapter':
+      targetRef = chapterDivRef
+      break
+    case 'verse':
+      targetRef = verseDivRef
+      break
+  }
+
+  if (!targetRef.current || !containerRef.current) return
+
+  const targetRect = targetRef.current.getBoundingClientRect()
+  const containerRect = containerRef.current.getBoundingClientRect()
+
+  setInputStyle({
+    position: 'absolute',
+    left: targetRect.left - containerRect.left,
+    top: targetRect.top - containerRect.top,
+    width: targetRect.width,
+    height: targetRect.height,
+    // ...스타일
+  })
+}, [activeField])
+```
+
+#### Tab 키 처리 (핵심!)
+
+```tsx
+const handleKeyDown = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  if (e.key === 'Tab') {
+    e.preventDefault() // ⭐ 기본 Tab 동작 막기 = Blur 방지!
+
+    if (e.shiftKey) {
+      // Shift+Tab: 역순
+      setActiveField((prev) => {
+        switch (prev) {
+          case 'book': return 'verse'
+          case 'chapter': return 'book'
+          case 'verse': return 'chapter'
+        }
+      })
+    } else {
+      // Tab: 순방향
+      if (activeField === 'verse') {
+        // 절에서 Tab: 검색 실행 후 책으로 이동
+        if (book && chapter && verse) {
+          await onSearch()
+        }
+        setActiveField('book')
+      } else {
+        setActiveField((prev) => (prev === 'book' ? 'chapter' : 'verse'))
+      }
+    }
+
+    // 필드 변경 후 전체 선택
+    setTimeout(() => masterInputRef.current?.select(), 0)
+  }
+  // Enter, Escape, 방향키 처리...
+}, [activeField, book, chapter, verse, onSearch, masterInputRef])
+```
+
+#### JSX 구조
+
+```tsx
+return (
+  <footer>
+    <div ref={containerRef} className="relative flex items-center gap-3">
+
+      {/* ⭐ 마스터 Input - 단 하나만 존재, 위치만 변경 ⭐ */}
+      <input
+        ref={masterInputRef}
+        type="text"
+        value={currentValue}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        className="absolute z-10 ..."
+        style={inputStyle}
+      />
+
+      {/* 책 필드 (플레이스홀더 - div) */}
+      <div className="flex items-center gap-1">
+        <label>책</label>
+        <div
+          ref={bookDivRef}
+          onClick={() => handleFieldClick('book')}
+          style={{ visibility: activeField === 'book' ? 'hidden' : 'visible' }}
+        >
+          {book}
+        </div>
+      </div>
+
+      {/* 장 필드 (플레이스홀더 - div) */}
+      <div className="flex items-center gap-1">
+        <label>장</label>
+        <div
+          ref={chapterDivRef}
+          onClick={() => handleFieldClick('chapter')}
+          style={{ visibility: activeField === 'chapter' ? 'hidden' : 'visible' }}
+        >
+          {chapter}
+        </div>
+      </div>
+
+      {/* 절 필드 (플레이스홀더 - div) */}
+      <div className="flex items-center gap-1">
+        <label>절</label>
+        <div
+          ref={verseDivRef}
+          onClick={() => handleFieldClick('verse')}
+          style={{ visibility: activeField === 'verse' ? 'hidden' : 'visible' }}
+        >
+          {verse}
+        </div>
+      </div>
+
+    </div>
+  </footer>
+)
+```
+
+## 두벌식 키보드 매핑
+
+```
+Tab 키 입력
+    │
+    ▼
+e.preventDefault()  ← 브라우저 기본 Tab 동작(focus 이동) 차단
+    │
+    ▼
+setActiveField('chapter')  ← React state만 변경
+    │
+    ▼
+inputStyle 변경: left: 32px → left: 120px  ← CSS만 변경
+    │
+    ▼
+동일한 <input> DOM 요소가 CSS로 이동
+    │
+    ▼
+Focus 유지, Blur 이벤트 없음
+    │
+    ▼
+Chromium이 ImmAssociateContextEx를 호출하지 않음
+    │
+    ▼
+IME context 유지 ✅ 한글 모드 그대로!
+```
+
+### 동작 방식 요약
+
+| 키 | 동작 |
+|----|------|
+| **Tab** | 책 → 장 → 절 → (검색 실행) → 책 순환 |
+| **Shift+Tab** | 역순 순환 |
+| **Enter** | 검색 실행 후 책 필드로 이동 |
+| **ESC** | blur (입력 필드에서 포커스 해제) |
+| **←/→ 방향키** | 커서가 끝에 있을 때 필드 이동 |
+| **필드 클릭** | 해당 필드로 이동 |
+
+### 조건부 렌더링 vs Master Input 패턴
+
+| 항목 | 조건부 렌더링 (실패) | Master Input (성공) |
+|------|---------------------|---------------------|
+| Input 개수 | 필드마다 다른 input | **단일 input** |
+| DOM 변화 | 필드 변경 시 언마운트/마운트 | **input은 항상 DOM에 존재** |
+| Focus | 필드마다 다른 요소에 focus | **같은 요소에 focus 유지** |
+| Blur 발생 | 필드 변경 시 발생 | **발생하지 않음** |
+| IME 상태 | 리셋됨 | **유지됨** |
+
+---
+
+## 사용자 측 Windows 설정 (선택)
+
+Windows 설정에서 IME 동작을 조정할 수 있습니다:
+
+1. **설정 → 시간 및 언어 → 입력 → 고급 키보드 설정**
+2. "앱 창마다 다른 입력 방법 사용" 옵션 확인
+3. "기본 입력 방법 재정의" 설정
+
 ## 한계점
 
 - 영문 → 한글 변환은 **두벌식 키보드 배열**만 지원
 - 세벌식 등 다른 키보드 배열은 미지원
+- 복합 모음/종성 조합이 복잡한 경우 일부 예외 발생 가능
 
 ---
 
 ## 관련 파일
 
-- `src/renderer/src/shared/lib/engToKor.ts` - 영문 → 한글 변환 유틸리티 (점진적 입력 지원)
+- `src/renderer/src/shared/lib/engToKor.ts` - 영문 → 한글 변환 유틸리티
 - `src/renderer/src/App.tsx` - 변환 함수 적용
 - `src/renderer/src/widgets/Footer/Footer.tsx` - 책 이름 입력 input
-- `src/main/index.ts` - Windows IME 레지스트리 관련 IPC 핸들러
-- `src/preload/index.ts` - imeApi 브릿지
-- `src/renderer/src/widgets/SettingsModal/SettingsModal.tsx` - IME 최적화 UI

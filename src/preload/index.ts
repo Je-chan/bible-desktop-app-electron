@@ -28,11 +28,30 @@ const bibleApi = {
     ipcRenderer.invoke('bible:searchCount', version, keywords, startBook, endBook) as Promise<number>
 }
 
+// Settings - 동기적으로 초기 설정 로드 (렌더러 시작 시 즉시 사용 가능)
+const initialSettings = ipcRenderer.sendSync('settings:getSync') as {
+  backgroundColor: string
+  fontFamily: string
+  fontSize: number
+  fontColor: string
+  paddingX: number
+  paddingY: number
+  headerFontSize: number
+}
+
 // Settings API for renderer
 const settingsApi = {
+  getInitial: () => initialSettings,
   get: () => ipcRenderer.invoke('settings:get'),
-  set: (settings: { backgroundColor?: string; fontFamily?: string; fontSize?: number; fontColor?: string }) =>
-    ipcRenderer.invoke('settings:set', settings)
+  set: (settings: {
+    backgroundColor?: string
+    fontFamily?: string
+    fontSize?: number
+    fontColor?: string
+    paddingX?: number
+    paddingY?: number
+    headerFontSize?: number
+  }) => ipcRenderer.invoke('settings:set', settings)
 }
 
 // Fonts API for renderer
@@ -45,6 +64,12 @@ const imeApi = {
   getStatus: () => ipcRenderer.invoke('ime:getStatus') as Promise<'per-thread' | 'global' | 'not-windows'>,
   setGlobal: () => ipcRenderer.invoke('ime:setGlobal') as Promise<boolean>,
   isWindows: () => ipcRenderer.invoke('ime:isWindows') as Promise<boolean>
+}
+
+// Window API for renderer (창 모드 관련)
+const windowApi = {
+  isKiosk: () => ipcRenderer.invoke('window:isKiosk') as Promise<boolean>,
+  toggleKiosk: () => ipcRenderer.invoke('window:toggleKiosk') as Promise<boolean>
 }
 
 // Custom APIs for renderer
@@ -61,6 +86,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('settingsApi', settingsApi)
     contextBridge.exposeInMainWorld('fontsApi', fontsApi)
     contextBridge.exposeInMainWorld('imeApi', imeApi)
+    contextBridge.exposeInMainWorld('windowApi', windowApi)
   } catch (error) {
     console.error(error)
   }
@@ -77,4 +103,6 @@ if (process.contextIsolated) {
   window.fontsApi = fontsApi
   // @ts-ignore (define in dts)
   window.imeApi = imeApi
+  // @ts-ignore (define in dts)
+  window.windowApi = windowApi
 }

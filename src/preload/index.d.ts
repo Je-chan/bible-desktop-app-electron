@@ -28,9 +28,12 @@ interface Settings {
   fontSize: number
   fontColor: string
   paddingX: number
+  paddingY: number
+  headerFontSize: number
 }
 
 interface SettingsApi {
+  getInitial: () => Settings
   get: () => Promise<Settings>
   set: (settings: Partial<Settings>) => Promise<Settings>
 }
@@ -45,6 +48,11 @@ interface ImeApi {
   isWindows: () => Promise<boolean>
 }
 
+interface WindowApi {
+  isKiosk: () => Promise<boolean>
+  toggleKiosk: () => Promise<boolean>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -53,5 +61,6 @@ declare global {
     settingsApi: SettingsApi
     fontsApi: FontsApi
     imeApi: ImeApi
+    windowApi: WindowApi
   }
 }

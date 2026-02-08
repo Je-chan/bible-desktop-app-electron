@@ -6,7 +6,6 @@ import { useVerseSearch } from './features/verse-search'
 import { useVersionSwitch } from './features/version-switch'
 import { useVerseCopy } from './features/verse-copy'
 import { BIBLE_BOOKS } from './shared/config'
-import { engToKor } from './shared/lib'
 import { Header } from './widgets/Header'
 import { VerseContent } from './widgets/VerseContent'
 import { Footer } from './widgets/Footer'
@@ -27,9 +26,7 @@ function App() {
   const [showCopyToast, setShowCopyToast] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
 
-  const bookRef = useRef<HTMLInputElement>(null)
-  const chapterRef = useRef<HTMLInputElement>(null)
-  const verseRef = useRef<HTMLInputElement>(null)
+  const masterInputRef = useRef<HTMLInputElement>(null)
 
   const {
     currentVerse,
@@ -89,10 +86,7 @@ function App() {
 
       // Footer input이 focused인지 확인
       const activeElement = document.activeElement
-      const isFooterInputFocused =
-        activeElement === bookRef.current ||
-        activeElement === chapterRef.current ||
-        activeElement === verseRef.current
+      const isFooterInputFocused = activeElement === masterInputRef.current
 
       if (isFooterInputFocused && activeElement instanceof HTMLElement) {
         activeElement.blur()
@@ -158,6 +152,7 @@ function App() {
   // 키보드 단축키 (버전 변경, 폰트 크기, 절 이동)
   useVersionSwitch({
     currentBookId,
+    setCurrentBookId,
     setFontSize: (updater) => {
       if (typeof updater === 'function') {
         updateSettings({ fontSize: updater(settings.fontSize) })
@@ -169,15 +164,12 @@ function App() {
   })
 
   // 검색 기능
-  const { handleKeyDown } = useVerseSearch({
+  const { handleSearch } = useVerseSearch({
     book,
     chapter,
     verse,
     setBook,
-    setCurrentBookId,
-    bookRef,
-    chapterRef,
-    verseRef
+    setCurrentBookId
   })
 
   // 설정 저장 및 모달 닫기
@@ -193,6 +185,7 @@ function App() {
         currentVersion={currentVersion}
         backgroundColor={settings.backgroundColor}
         fontColor={settings.fontColor}
+        headerFontSize={settings.headerFontSize}
       />
 
       {/* 메인 컨텐츠 영역 - 스플릿 뷰 */}
@@ -205,6 +198,7 @@ function App() {
             fontFamily={settings.fontFamily}
             fontColor={settings.fontColor}
             paddingX={settings.paddingX}
+            paddingY={settings.paddingY}
           />
         </div>
 
@@ -233,13 +227,11 @@ function App() {
         verse={verse}
         backgroundColor={settings.backgroundColor}
         fontColor={settings.fontColor}
-        bookRef={bookRef}
-        chapterRef={chapterRef}
-        verseRef={verseRef}
-        onBookChange={(value) => setBook(engToKor(value))}
+        masterInputRef={masterInputRef}
+        onBookChange={setBook}
         onChapterChange={setChapter}
         onVerseChange={setVerse}
-        onKeyDown={handleKeyDown}
+        onSearch={handleSearch}
         onSettingsClick={() => setShowSettings(true)}
         onScriptureRangeClick={() => setShowScriptureRange(true)}
         onKeyboardShortcutsClick={() => setShowKeyboardShortcuts(true)}
@@ -253,12 +245,16 @@ function App() {
         fontSize={settings.fontSize}
         fontColor={settings.fontColor}
         paddingX={settings.paddingX}
+        paddingY={settings.paddingY}
+        headerFontSize={settings.headerFontSize}
         systemFonts={settings.systemFonts}
         onBackgroundColorChange={(color) => updateSettings({ backgroundColor: color })}
         onFontFamilyChange={(font) => updateSettings({ fontFamily: font })}
         onFontSizeChange={(size) => updateSettings({ fontSize: size })}
         onFontColorChange={(color) => updateSettings({ fontColor: color })}
         onPaddingXChange={(padding) => updateSettings({ paddingX: padding })}
+        onPaddingYChange={(padding) => updateSettings({ paddingY: padding })}
+        onHeaderFontSizeChange={(size) => updateSettings({ headerFontSize: size })}
         onSave={handleSaveSettings}
         onClose={() => setShowSettings(false)}
       />
