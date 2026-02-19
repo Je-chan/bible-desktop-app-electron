@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import type { SearchResult, ScriptureRange } from '../types/bible'
 
+type ViewMode = 'verse' | 'chapter' | 'focus'
+
+interface ChapterVerse {
+  verse: number
+  text: string
+}
+
 interface BibleStore {
   currentVerse: SearchResult | null
   recentSearches: SearchResult[]
@@ -8,6 +15,9 @@ interface BibleStore {
   currentVersion: string
   todayScriptureRange: ScriptureRange | null
   currentScripture: SearchResult | null
+  // 보기 모드
+  viewMode: ViewMode
+  chapterVerses: ChapterVerse[] | null
   // 역본 비교 관련
   isCompareOpen: boolean
   comparedVersion: string
@@ -16,6 +26,10 @@ interface BibleStore {
   addToRecent: (verse: SearchResult) => void
   setCurrentVersion: (version: string) => void
   setTodayScriptureRange: (range: ScriptureRange | null) => void
+  // 보기 모드
+  setViewMode: (mode: ViewMode) => void
+  toggleViewMode: () => void
+  fetchChapter: (bookNumber: number, chapter: number) => Promise<void>
   // 역본 비교 관련
   setCompareOpen: (isOpen: boolean) => void
   setComparedVersion: (version: string) => void
@@ -52,6 +66,9 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   currentVersion: '개역한글',
   todayScriptureRange: null,
   currentScripture: null,
+  // 보기 모드
+  viewMode: 'verse',
+  chapterVerses: null,
   // 역본 비교 관련
   isCompareOpen: false,
   comparedVersion: '개역한글',
@@ -70,6 +87,20 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   setCurrentVersion: (version) => set({ currentVersion: version }),
 
   setTodayScriptureRange: (range) => set({ todayScriptureRange: range, currentScripture: null }),
+
+  // 보기 모드
+  setViewMode: (mode) => set({ viewMode: mode }),
+  toggleViewMode: () => {
+    const { viewMode } = get()
+    const next: ViewMode = viewMode === 'verse' ? 'chapter' : viewMode === 'chapter' ? 'focus' : 'verse'
+    set({ viewMode: next })
+  },
+
+  fetchChapter: async (bookNumber, chapter) => {
+    const { currentVersion } = get()
+    const verses = await window.bibleApi.getChapter(currentVersion, bookNumber, chapter)
+    set({ chapterVerses: verses })
+  },
 
   // 역본 비교 관련
   setCompareOpen: (isOpen) => set({ isCompareOpen: isOpen }),
@@ -98,7 +129,7 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   fetchVerse: async (bookName, bookNumber, chapter, verse) => {
     set({ isLoading: true })
 
-    const { currentVersion, addToRecent, todayScriptureRange, isCompareOpen, fetchComparedVerse } = get()
+    const { currentVersion, addToRecent, todayScriptureRange, isCompareOpen, fetchComparedVerse, viewMode, fetchChapter } = get()
     const text = await window.bibleApi.getVerse(currentVersion, bookNumber, chapter, verse)
 
     if (text) {
@@ -122,6 +153,11 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
 
       set(updates as BibleStore)
       addToRecent(result)
+
+      // 장/포커스 보기 모드이면 장 전체 fetch
+      if (viewMode !== 'verse') {
+        await fetchChapter(bookNumber, chapter)
+      }
 
       // 비교 뷰가 열려있으면 비교 구절도 함께 fetch
       if (isCompareOpen) {

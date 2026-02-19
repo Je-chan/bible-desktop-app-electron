@@ -9,6 +9,7 @@ interface VersionComparePanelProps {
   fontFamily: string
   fontColor: string
   paddingX: number
+  paddingY: number
 }
 
 export const VersionComparePanel = ({
@@ -18,15 +19,16 @@ export const VersionComparePanel = ({
   fontSize,
   fontFamily,
   fontColor,
-  paddingX
+  paddingX,
+  paddingY
 }: VersionComparePanelProps) => {
   if (!isOpen) return null
 
   return (
     <div className="flex-1 flex flex-col border-l border-slate-300">
-      <main className="flex-1 flex items-start justify-start p-8 overflow-auto">
+      <main className="flex-1 flex items-start justify-start px-8" style={{ overflow: 'overlay' as any }}>
         {comparedVerse ? (
-          <div className="w-full" style={{ paddingLeft: paddingX, paddingRight: paddingX }}>
+          <div className="w-full" style={{ paddingLeft: paddingX, paddingRight: paddingX, paddingTop: paddingY, paddingBottom: paddingY }}>
             <p
               className="leading-relaxed"
               style={{ fontSize: `${fontSize}px`, fontFamily, color: fontColor }}

@@ -8,6 +8,8 @@ import { useVerseCopy } from './features/verse-copy'
 import { BIBLE_BOOKS } from './shared/config'
 import { Header } from './widgets/Header'
 import { VerseContent } from './widgets/VerseContent'
+import { ChapterContent } from './widgets/ChapterContent'
+import { FocusContent } from './widgets/FocusContent'
 import { Footer } from './widgets/Footer'
 import { SettingsModal } from './widgets/SettingsModal'
 import { ScriptureRangeModal } from './widgets/ScriptureRangeModal'
@@ -25,6 +27,7 @@ function App() {
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [showCopyToast, setShowCopyToast] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [isKiosk, setIsKiosk] = useState(true)
 
   const masterInputRef = useRef<HTMLInputElement>(null)
 
@@ -35,6 +38,11 @@ function App() {
     currentScripture,
     todayScriptureRange,
     setTodayScriptureRange,
+    // 보기 모드
+    viewMode,
+    setViewMode,
+    chapterVerses,
+    fetchChapter,
     // 역본 비교 관련
     isCompareOpen,
     comparedVersion,
@@ -73,9 +81,43 @@ function App() {
     [fetchVerse]
   )
 
-  // ESC로 Footer Input blur (모달/패널이 열려있지 않을 때만)
+  // 초기 Kiosk 상태 확인
   useEffect(() => {
-    const handleEscapeKey = (e: KeyboardEvent) => {
+    window.windowApi.isKiosk().then(setIsKiosk)
+  }, [])
+
+  // 보기 모드 변경 핸들러
+  const handleViewModeChange = useCallback(
+    async (mode: 'verse' | 'chapter' | 'focus') => {
+      setViewMode(mode)
+      // verse → chapter/focus 전환 시 장 데이터 fetch
+      if (mode !== 'verse' && !chapterVerses && currentVerse) {
+        const book = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
+        if (book) {
+          await fetchChapter(book.id, currentVerse.chapter)
+        }
+      }
+    },
+    [setViewMode, chapterVerses, currentVerse, fetchChapter]
+  )
+
+  // Kiosk 모드 토글 핸들러
+  const handleToggleKiosk = useCallback(async () => {
+    const newState = await window.windowApi.toggleKiosk()
+    setIsKiosk(newState)
+  }, [])
+
+  // F5: kiosk 모드 진입 / ESC: 창 모드 전환 + 기존 동작
+  useEffect(() => {
+    const handleKioskAndEscape = async (e: KeyboardEvent) => {
+      // F5: kiosk 모드 진입
+      if (e.key === 'F5') {
+        e.preventDefault()
+        const newState = await window.windowApi.setKiosk(true)
+        setIsKiosk(newState)
+        return
+      }
+
       if (e.key !== 'Escape') return
 
       // 모달이 열려있으면 모달이 처리함 (capture phase)
@@ -90,11 +132,16 @@ function App() {
 
       if (isFooterInputFocused && activeElement instanceof HTMLElement) {
         activeElement.blur()
+        return
       }
+
+      // 아무것도 열려있지 않으면 kiosk 해제
+      const newState = await window.windowApi.setKiosk(false)
+      setIsKiosk(newState)
     }
 
-    window.addEventListener('keydown', handleEscapeKey)
-    return () => window.removeEventListener('keydown', handleEscapeKey)
+    window.addEventListener('keydown', handleKioskAndEscape)
+    return () => window.removeEventListener('keydown', handleKioskAndEscape)
   }, [showSettings, showScriptureRange, showKeyboardShortcuts, showSearch, isCompareOpen])
 
   // Cmd/Ctrl+F로 검색 패널 토글
@@ -190,16 +237,54 @@ function App() {
 
       {/* 메인 컨텐츠 영역 - 스플릿 뷰 */}
       <div className="flex-1 flex min-h-0">
-        {/* 왼쪽: 현재 구절 */}
+        {/* 왼쪽: 현재 구절 / 장 보기 */}
         <div className={`flex flex-col ${isCompareOpen || showSearch ? 'flex-1' : 'w-full'}`}>
-          <VerseContent
-            currentVerse={currentVerse}
-            fontSize={settings.fontSize}
-            fontFamily={settings.fontFamily}
-            fontColor={settings.fontColor}
-            paddingX={settings.paddingX}
-            paddingY={settings.paddingY}
-          />
+          {viewMode === 'focus' ? (
+            <FocusContent
+              currentVerse={currentVerse}
+              chapterVerses={chapterVerses}
+              fontSize={settings.fontSize}
+              fontFamily={settings.fontFamily}
+              fontColor={settings.fontColor}
+              paddingX={settings.paddingX}
+              paddingY={settings.paddingY}
+              onVerseClick={(verse) => {
+                if (currentVerse) {
+                  const book = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
+                  if (book) {
+                    fetchVerse(currentVerse.book, book.id, currentVerse.chapter, verse)
+                  }
+                }
+              }}
+            />
+          ) : viewMode === 'chapter' ? (
+            <ChapterContent
+              currentVerse={currentVerse}
+              chapterVerses={chapterVerses}
+              fontSize={settings.fontSize}
+              fontFamily={settings.fontFamily}
+              fontColor={settings.fontColor}
+              paddingX={settings.paddingX}
+              paddingY={settings.paddingY}
+              onVerseClick={(verse) => {
+                if (currentVerse) {
+                  const book = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
+                  if (book) {
+                    fetchVerse(currentVerse.book, book.id, currentVerse.chapter, verse)
+                  }
+                }
+              }}
+            />
+          ) : (
+            <VerseContent
+              currentVerse={currentVerse}
+              fontSize={settings.fontSize}
+              fontFamily={settings.fontFamily}
+              fontColor={settings.fontColor}
+              paddingX={settings.paddingX}
+              paddingY={settings.paddingY}
+            />
+          )}
         </div>
 
         {/* 오른쪽: 역본 비교 */}
@@ -211,6 +296,7 @@ function App() {
           fontFamily={settings.fontFamily}
           fontColor={settings.fontColor}
           paddingX={settings.paddingX}
+          paddingY={settings.paddingY}
         />
 
         {/* 오른쪽: 검색 패널 */}
@@ -236,6 +322,10 @@ function App() {
         onScriptureRangeClick={() => setShowScriptureRange(true)}
         onKeyboardShortcutsClick={() => setShowKeyboardShortcuts(true)}
         currentScripture={currentScripture?.reference}
+        isKiosk={isKiosk}
+        onToggleKiosk={handleToggleKiosk}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
       />
 
       <SettingsModal

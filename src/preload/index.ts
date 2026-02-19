@@ -69,7 +69,8 @@ const imeApi = {
 // Window API for renderer (창 모드 관련)
 const windowApi = {
   isKiosk: () => ipcRenderer.invoke('window:isKiosk') as Promise<boolean>,
-  toggleKiosk: () => ipcRenderer.invoke('window:toggleKiosk') as Promise<boolean>
+  toggleKiosk: () => ipcRenderer.invoke('window:toggleKiosk') as Promise<boolean>,
+  setKiosk: (value: boolean) => ipcRenderer.invoke('window:setKiosk', value) as Promise<boolean>
 }
 
 // Custom APIs for renderer

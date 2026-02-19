@@ -206,6 +206,12 @@ app.whenReady().then(async () => {
     return !isKiosk
   })
 
+  ipcMain.handle('window:setKiosk', (_, value: boolean) => {
+    if (!mainWindow) return false
+    mainWindow.setKiosk(value)
+    return value
+  })
+
   createWindow()
 
   app.on('activate', function () {
