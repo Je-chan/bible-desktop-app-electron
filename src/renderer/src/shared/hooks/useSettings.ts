@@ -8,6 +8,8 @@ export interface SettingsState {
   paddingX: number
   paddingY: number
   headerFontSize: number
+  headerPaddingY: number
+  headerAlign: 'left' | 'center' | 'right'
   systemFonts: string[]
 }
 
@@ -22,6 +24,8 @@ const getInitialSettings = (): SettingsState => {
     paddingX: saved.paddingX,
     paddingY: saved.paddingY ?? 0,
     headerFontSize: saved.headerFontSize ?? 14,
+    headerPaddingY: saved.headerPaddingY ?? 16,
+    headerAlign: saved.headerAlign ?? 'center',
     systemFonts: []
   }
 }

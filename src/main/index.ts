@@ -15,6 +15,8 @@ interface Settings {
   paddingX: number
   paddingY: number
   headerFontSize: number
+  headerPaddingY: number
+  headerAlign: 'left' | 'center' | 'right'
 }
 
 // electron-store는 ESM이므로 동적 import 필요
@@ -30,7 +32,9 @@ const initStore = async () => {
       fontColor: '#1e293b', // slate-800
       paddingX: 48,
       paddingY: 0,
-      headerFontSize: 14
+      headerFontSize: 14,
+      headerPaddingY: 16,
+      headerAlign: 'center' as const
     }
   })
 }

@@ -233,6 +233,8 @@ function App() {
         backgroundColor={settings.backgroundColor}
         fontColor={settings.fontColor}
         headerFontSize={settings.headerFontSize}
+        headerPaddingY={settings.headerPaddingY}
+        headerAlign={settings.headerAlign}
       />
 
       {/* 메인 컨텐츠 영역 - 스플릿 뷰 */}
@@ -337,6 +339,8 @@ function App() {
         paddingX={settings.paddingX}
         paddingY={settings.paddingY}
         headerFontSize={settings.headerFontSize}
+        headerPaddingY={settings.headerPaddingY}
+        headerAlign={settings.headerAlign}
         systemFonts={settings.systemFonts}
         onBackgroundColorChange={(color) => updateSettings({ backgroundColor: color })}
         onFontFamilyChange={(font) => updateSettings({ fontFamily: font })}
@@ -345,6 +349,8 @@ function App() {
         onPaddingXChange={(padding) => updateSettings({ paddingX: padding })}
         onPaddingYChange={(padding) => updateSettings({ paddingY: padding })}
         onHeaderFontSizeChange={(size) => updateSettings({ headerFontSize: size })}
+        onHeaderPaddingYChange={(padding) => updateSettings({ headerPaddingY: padding })}
+        onHeaderAlignChange={(align) => updateSettings({ headerAlign: align })}
         onSave={handleSaveSettings}
         onClose={() => setShowSettings(false)}
       />
