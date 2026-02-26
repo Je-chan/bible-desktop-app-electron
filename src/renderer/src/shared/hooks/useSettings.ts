@@ -10,6 +10,7 @@ export interface SettingsState {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter' | 'focus'
   systemFonts: string[]
 }
 
@@ -26,6 +27,7 @@ const getInitialSettings = (): SettingsState => {
     headerFontSize: saved.headerFontSize ?? 14,
     headerPaddingY: saved.headerPaddingY ?? 16,
     headerAlign: saved.headerAlign ?? 'center',
+    viewMode: saved.viewMode ?? 'verse',
     systemFonts: []
   }
 }

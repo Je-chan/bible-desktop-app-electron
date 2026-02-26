@@ -90,6 +90,9 @@ function App() {
   const handleViewModeChange = useCallback(
     async (mode: 'verse' | 'chapter' | 'focus') => {
       setViewMode(mode)
+      // 설정에 저장
+      updateSettings({ viewMode: mode })
+      window.settingsApi.set({ viewMode: mode })
       // verse → chapter/focus 전환 시 장 데이터 fetch
       if (mode !== 'verse' && !chapterVerses && currentVerse) {
         const book = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
@@ -98,7 +101,7 @@ function App() {
         }
       }
     },
-    [setViewMode, chapterVerses, currentVerse, fetchChapter]
+    [setViewMode, updateSettings, chapterVerses, currentVerse, fetchChapter]
   )
 
   // Kiosk 모드 토글 핸들러
@@ -178,6 +181,13 @@ function App() {
       setShowSearch(false)
     }
   }, [isCompareOpen])
+
+  // 저장된 viewMode 복원
+  useEffect(() => {
+    if (settings.viewMode && settings.viewMode !== viewMode) {
+      handleViewModeChange(settings.viewMode)
+    }
+  }, [])
 
   // 초기 구절 로드
   useEffect(() => {

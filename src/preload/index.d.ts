@@ -32,6 +32,7 @@ interface Settings {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter' | 'focus'
 }
 
 interface SettingsApi {

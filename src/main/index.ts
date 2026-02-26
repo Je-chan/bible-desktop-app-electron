@@ -17,6 +17,7 @@ interface Settings {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter' | 'focus'
 }
 
 // electron-store는 ESM이므로 동적 import 필요
@@ -34,7 +35,8 @@ const initStore = async () => {
       paddingY: 0,
       headerFontSize: 14,
       headerPaddingY: 16,
-      headerAlign: 'center' as const
+      headerAlign: 'center' as const,
+      viewMode: 'verse' as const
     }
   })
 }

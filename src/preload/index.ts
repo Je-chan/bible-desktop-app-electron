@@ -39,6 +39,7 @@ const initialSettings = ipcRenderer.sendSync('settings:getSync') as {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
+  viewMode: 'verse' | 'chapter' | 'focus'
 }
 
 // Settings API for renderer
@@ -55,6 +56,7 @@ const settingsApi = {
     headerFontSize?: number
     headerPaddingY?: number
     headerAlign?: 'left' | 'center' | 'right'
+    viewMode?: 'verse' | 'chapter' | 'focus'
   }) => ipcRenderer.invoke('settings:set', settings)
 }
 
