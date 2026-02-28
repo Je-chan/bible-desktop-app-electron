@@ -18,6 +18,7 @@ interface BibleStore {
   // 보기 모드
   viewMode: ViewMode
   chapterVerses: ChapterVerse[] | null
+  scrollBehavior: ScrollBehavior
   // 역본 비교 관련
   isCompareOpen: boolean
   comparedVersion: string
@@ -38,7 +39,8 @@ interface BibleStore {
     bookName: string,
     bookNumber: number,
     chapter: number,
-    verse: number
+    verse: number,
+    scrollBehavior?: ScrollBehavior
   ) => Promise<boolean>
 }
 
@@ -69,6 +71,7 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   // 보기 모드
   viewMode: 'verse',
   chapterVerses: null,
+  scrollBehavior: 'instant',
   // 역본 비교 관련
   isCompareOpen: false,
   comparedVersion: '개역한글',
@@ -126,7 +129,7 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
     }
   },
 
-  fetchVerse: async (bookName, bookNumber, chapter, verse) => {
+  fetchVerse: async (bookName, bookNumber, chapter, verse, scrollBehavior = 'instant') => {
     set({ isLoading: true })
 
     const { currentVersion, addToRecent, todayScriptureRange, isCompareOpen, fetchComparedVerse, viewMode, fetchChapter } = get()
@@ -144,7 +147,8 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
       // 범위 내에 있으면 currentScripture 업데이트
       const updates: Partial<BibleStore> = {
         currentVerse: result,
-        isLoading: false
+        isLoading: false,
+        scrollBehavior
       }
 
       if (todayScriptureRange && isVerseInRange(bookNumber, chapter, verse, todayScriptureRange)) {

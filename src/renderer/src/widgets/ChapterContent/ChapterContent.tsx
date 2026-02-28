@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import type { SearchResult } from '../../types/bible'
 import { parseVerseText } from '../../shared/lib'
+import { useBibleStore } from '../../store/useBibleStore'
+
 
 interface ChapterVerse {
   verse: number
@@ -34,9 +36,10 @@ export const ChapterContent = ({
   // 현재 절이 변경되면 해당 절로 스크롤
   useEffect(() => {
     if (activeVerseRef.current && containerRef.current) {
+      const behavior = useBibleStore.getState().scrollBehavior
       // chapterVerses 로드 직후에는 레이아웃이 아직 완성되지 않을 수 있으므로 한 프레임 대기
       requestAnimationFrame(() => {
-        activeVerseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        activeVerseRef.current?.scrollIntoView({ behavior, block: 'center' })
       })
     }
   }, [currentVerse?.verse, chapterVerses])

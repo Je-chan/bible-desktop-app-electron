@@ -52,10 +52,12 @@ export const useVerseNavigation = (currentBookId: number, setCurrentBookId: (id:
       }
     }
 
+    const chapterChanged = newChapter !== currentVerse.chapter || newBookId !== currentBookId
+
     const newBook = BIBLE_BOOKS.find((b) => b.id === newBookId)
     if (newBook) {
       setCurrentBookId(newBookId)
-      await fetchVerse(newBook.abbr, newBookId, newChapter, newVerse)
+      await fetchVerse(newBook.abbr, newBookId, newChapter, newVerse, chapterChanged ? 'instant' : 'smooth')
     }
   }
 
