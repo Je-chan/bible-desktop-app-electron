@@ -200,6 +200,12 @@ function App() {
       setBook(currentVerse.book)
       setChapter(currentVerse.chapter.toString())
       setVerse(currentVerse.verse.toString())
+      // input이 포커스된 상태면 텍스트 재선택 (리렌더링으로 선택 해제 방지)
+      setTimeout(() => {
+        if (document.activeElement === masterInputRef.current) {
+          masterInputRef.current?.select()
+        }
+      }, 0)
     }
   }, [currentVerse])
 
