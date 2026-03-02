@@ -8,3 +8,5 @@ out
 pnpm-lock.yaml
 resources/bible/*
 build
+CLAUDE.md
+.claude/
