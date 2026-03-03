@@ -1,5 +1,21 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { X, ChevronDown, Check, Search, Minus, Plus, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
+import {
+  X,
+  ChevronDown,
+  Check,
+  Search,
+  Minus,
+  Plus,
+  AlignLeft,
+  AlignCenter,
+  AlignRight
+} from 'lucide-react'
+
+interface ResponsiveReadingColors {
+  leader: string
+  congregation: string
+  unison: string
+}
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -13,6 +29,7 @@ interface SettingsModalProps {
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
   systemFonts: string[]
+  responsiveReadingColors: ResponsiveReadingColors
   onBackgroundColorChange: (color: string) => void
   onFontFamilyChange: (font: string) => void
   onFontSizeChange: (size: number) => void
@@ -22,6 +39,7 @@ interface SettingsModalProps {
   onHeaderFontSizeChange: (size: number) => void
   onHeaderPaddingYChange: (padding: number) => void
   onHeaderAlignChange: (align: 'left' | 'center' | 'right') => void
+  onResponsiveReadingColorsChange: (colors: ResponsiveReadingColors) => void
   onSave: () => void
   onClose: () => void
 }
@@ -230,6 +248,7 @@ export const SettingsModal = ({
   headerPaddingY,
   headerAlign,
   systemFonts,
+  responsiveReadingColors,
   onBackgroundColorChange,
   onFontFamilyChange,
   onFontSizeChange,
@@ -239,6 +258,7 @@ export const SettingsModal = ({
   onHeaderFontSizeChange,
   onHeaderPaddingYChange,
   onHeaderAlignChange,
+  onResponsiveReadingColorsChange,
   onSave,
   onClose
 }: SettingsModalProps) => {
@@ -479,7 +499,9 @@ export const SettingsModal = ({
           {activeTab === 'layout' && (
             <div className="space-y-5">
               {/* 타이틀 영역 */}
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">타이틀 영역</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                타이틀 영역
+              </p>
 
               <NumberStepper
                 label="상하 여백"
@@ -493,11 +515,11 @@ export const SettingsModal = ({
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-slate-600">정렬</label>
                 <div className="flex items-center gap-1">
-                  {([
+                  {[
                     { value: 'left' as const, icon: AlignLeft, label: '왼쪽' },
                     { value: 'center' as const, icon: AlignCenter, label: '가운데' },
                     { value: 'right' as const, icon: AlignRight, label: '오른쪽' }
-                  ]).map(({ value, icon: Icon, label }) => (
+                  ].map(({ value, icon: Icon, label }) => (
                     <button
                       key={value}
                       onClick={() => onHeaderAlignChange(value)}
@@ -517,7 +539,9 @@ export const SettingsModal = ({
               <div className="h-px bg-slate-100" />
 
               {/* 본문 영역 */}
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">본문 영역</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                본문 영역
+              </p>
 
               <NumberStepper
                 label="좌우 여백"
@@ -540,13 +564,15 @@ export const SettingsModal = ({
               {/* 미리보기 */}
               <div className="mt-4 p-4 rounded-lg border border-slate-200 bg-slate-50">
                 <p className="text-xs text-slate-400 mb-2">미리보기</p>
-                <div
-                  className="bg-white rounded border border-slate-200 overflow-hidden"
-                >
+                <div className="bg-white rounded border border-slate-200 overflow-hidden">
                   {/* 타이틀 영역 미리보기 */}
                   <div
                     className={`flex items-center border-b border-slate-200 border-dashed text-xs text-slate-400 px-2 ${
-                      headerAlign === 'left' ? 'justify-start' : headerAlign === 'right' ? 'justify-end' : 'justify-center'
+                      headerAlign === 'left'
+                        ? 'justify-start'
+                        : headerAlign === 'right'
+                          ? 'justify-end'
+                          : 'justify-center'
                     }`}
                     style={{
                       paddingTop: Math.min(headerPaddingY * 0.3, 20),
@@ -601,6 +627,78 @@ export const SettingsModal = ({
                   <p style={{ color: fontColor, fontSize: '14px', fontFamily }}>
                     태초에 하나님이 천지를 창조하시니라
                   </p>
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100" />
+
+              {/* 교독문 색상 */}
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+                  교독문 색상
+                </p>
+                <div className="space-y-3">
+                  {[
+                    { key: 'leader' as const, label: '인도자' },
+                    { key: 'congregation' as const, label: '회중' },
+                    { key: 'unison' as const, label: '합독' }
+                  ].map(({ key, label }) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-slate-600">{label}</label>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-6 h-6 rounded-full border border-slate-200"
+                          style={{ backgroundColor: responsiveReadingColors[key] }}
+                        />
+                        <div className="relative">
+                          <input
+                            type="color"
+                            value={responsiveReadingColors[key]}
+                            onChange={(e) =>
+                              onResponsiveReadingColorsChange({
+                                ...responsiveReadingColors,
+                                [key]: e.target.value
+                              })
+                            }
+                            className="w-8 h-8 cursor-pointer rounded border border-slate-200"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* 교독문 미리보기 */}
+                <div className="mt-4 p-4 rounded-lg border border-slate-200">
+                  <p className="text-xs text-slate-400 mb-2">미리보기</p>
+                  <div className="px-4 py-3 rounded-lg space-y-1" style={{ backgroundColor }}>
+                    <p
+                      style={{
+                        color: responsiveReadingColors.leader,
+                        fontSize: '13px',
+                        fontFamily
+                      }}
+                    >
+                      [1] 여호와는 나의 목자시니 (인도자)
+                    </p>
+                    <p
+                      style={{
+                        color: responsiveReadingColors.congregation,
+                        fontSize: '13px',
+                        fontFamily
+                      }}
+                    >
+                      [2] 내게 부족함이 없으리로다 (회중)
+                    </p>
+                    <p
+                      style={{
+                        color: responsiveReadingColors.unison,
+                        fontSize: '13px',
+                        fontFamily
+                      }}
+                    >
+                      [6] 영원히 여호와의 집에 거하리로다 (합독)
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

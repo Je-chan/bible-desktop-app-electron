@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useBibleStore } from './store/useBibleStore'
-import { useSettings } from './shared/hooks'
+import { useSettings, useResponsiveReading } from './shared/hooks'
 import { useVerseNavigation } from './features/verse-navigation'
 import { useVerseSearch } from './features/verse-search'
 import { useVersionSwitch } from './features/version-switch'
@@ -62,6 +62,58 @@ function App() {
     }
   }, [todayScriptureRange])
   const { settings, updateSettings, saveSettings } = useSettings()
+
+  // 교독문 모드
+  const {
+    isActive: isResponsiveActive,
+    totalVerses: responsiveTotalVerses,
+    colors: responsiveColors,
+    getRolesForChapter,
+    getRoleForVerse
+  } = useResponsiveReading(settings.responsiveReadingColors)
+  const [verseRoles, setVerseRoles] = useState<
+    Map<number, import('./shared/lib').ResponsiveReadingRole>
+  >(new Map())
+  const [singleVerseRole, setSingleVerseRole] =
+    useState<import('./shared/lib').ResponsiveReadingRole>(null)
+
+  // 교독문 역할 계산: 장/포커스 모드
+  useEffect(() => {
+    if (!isResponsiveActive || !currentVerse || !chapterVerses) {
+      setVerseRoles(new Map())
+      return
+    }
+    getRolesForChapter(
+      currentVerse.book,
+      currentVerse.chapter,
+      chapterVerses.map((v) => v.verse)
+    ).then(setVerseRoles)
+  }, [
+    isResponsiveActive,
+    responsiveTotalVerses,
+    currentVerse?.book,
+    currentVerse?.chapter,
+    chapterVerses,
+    getRolesForChapter
+  ])
+
+  // 교독문 역할 계산: 절 보기 모드
+  useEffect(() => {
+    if (!isResponsiveActive || !currentVerse) {
+      setSingleVerseRole(null)
+      return
+    }
+    getRoleForVerse(currentVerse.book, currentVerse.chapter, currentVerse.verse).then(
+      setSingleVerseRole
+    )
+  }, [
+    isResponsiveActive,
+    responsiveTotalVerses,
+    currentVerse?.book,
+    currentVerse?.chapter,
+    currentVerse?.verse,
+    getRoleForVerse
+  ])
 
   // 복사 성공 시 토스트 표시
   const handleCopySuccess = useCallback(() => {
@@ -242,7 +294,10 @@ function App() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: settings.backgroundColor }}>
+    <div
+      className="h-screen w-screen flex flex-col"
+      style={{ backgroundColor: settings.backgroundColor }}
+    >
       <Header
         currentVerse={currentVerse}
         currentVersion={currentVersion}
@@ -274,6 +329,8 @@ function App() {
                   }
                 }
               }}
+              verseRoles={verseRoles}
+              responsiveColors={responsiveColors}
             />
           ) : viewMode === 'chapter' ? (
             <ChapterContent
@@ -292,6 +349,8 @@ function App() {
                   }
                 }
               }}
+              verseRoles={verseRoles}
+              responsiveColors={responsiveColors}
             />
           ) : (
             <VerseContent
@@ -301,6 +360,8 @@ function App() {
               fontColor={settings.fontColor}
               paddingX={settings.paddingX}
               paddingY={settings.paddingY}
+              responsiveRole={singleVerseRole}
+              responsiveColor={singleVerseRole ? responsiveColors[singleVerseRole] : undefined}
             />
           )}
         </div>
@@ -358,6 +419,7 @@ function App() {
         headerPaddingY={settings.headerPaddingY}
         headerAlign={settings.headerAlign}
         systemFonts={settings.systemFonts}
+        responsiveReadingColors={settings.responsiveReadingColors}
         onBackgroundColorChange={(color) => updateSettings({ backgroundColor: color })}
         onFontFamilyChange={(font) => updateSettings({ fontFamily: font })}
         onFontSizeChange={(size) => updateSettings({ fontSize: size })}
@@ -367,6 +429,9 @@ function App() {
         onHeaderFontSizeChange={(size) => updateSettings({ headerFontSize: size })}
         onHeaderPaddingYChange={(padding) => updateSettings({ headerPaddingY: padding })}
         onHeaderAlignChange={(align) => updateSettings({ headerAlign: align })}
+        onResponsiveReadingColorsChange={(colors) =>
+          updateSettings({ responsiveReadingColors: colors })
+        }
         onSave={handleSaveSettings}
         onClose={() => setShowSettings(false)}
       />

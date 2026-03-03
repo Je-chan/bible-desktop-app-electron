@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import type { SearchResult } from '../../types/bible'
+import type { ResponsiveReadingRole } from '../../shared/lib'
 import { parseVerseText } from '../../shared/lib'
 
 interface ChapterVerse {
@@ -16,6 +17,8 @@ interface FocusContentProps {
   paddingX: number
   paddingY: number
   onVerseClick: (verse: number) => void
+  verseRoles?: Map<number, ResponsiveReadingRole>
+  responsiveColors?: { leader: string; congregation: string; unison: string }
 }
 
 export const FocusContent = ({
@@ -25,7 +28,9 @@ export const FocusContent = ({
   fontFamily,
   fontColor,
   paddingX,
-  onVerseClick
+  onVerseClick,
+  verseRoles,
+  responsiveColors
 }: FocusContentProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const currentIndex = chapterVerses?.findIndex((v) => v.verse === currentVerse?.verse) ?? -1
@@ -70,6 +75,13 @@ export const FocusContent = ({
     containerRef.current?.focus()
   }, [])
 
+  const currRole = curr ? verseRoles?.get(curr.verse) : undefined
+  const currColor = currRole && responsiveColors ? responsiveColors[currRole] : fontColor
+  const prevRole = prev ? verseRoles?.get(prev.verse) : undefined
+  const prevColor = prevRole && responsiveColors ? responsiveColors[prevRole] : fontColor
+  const nextRole = next ? verseRoles?.get(next.verse) : undefined
+  const nextColor = nextRole && responsiveColors ? responsiveColors[nextRole] : fontColor
+
   const peekStyle = {
     fontSize: `${fontSize * 0.85}px`,
     fontFamily,
@@ -96,7 +108,7 @@ export const FocusContent = ({
           {/* 이전 절 (peek) */}
           <div
             className="cursor-pointer select-none leading-relaxed"
-            style={{ ...peekStyle, minHeight: '1.5em', marginBottom: '2rem' }}
+            style={{ ...peekStyle, color: prevColor, minHeight: '1.5em', marginBottom: '2rem' }}
             onClick={() => prev && onVerseClick(prev.verse)}
           >
             {prev && (
@@ -113,7 +125,7 @@ export const FocusContent = ({
             style={{
               fontSize: `${fontSize * 1.1}px`,
               fontFamily,
-              color: fontColor,
+              color: currColor,
               transition: 'all 0.4s ease'
             }}
           >
@@ -124,7 +136,7 @@ export const FocusContent = ({
           {/* 다음 절 (peek) */}
           <div
             className="cursor-pointer select-none leading-relaxed"
-            style={{ ...peekStyle, minHeight: '1.5em', marginTop: '2rem' }}
+            style={{ ...peekStyle, color: nextColor, minHeight: '1.5em', marginTop: '2rem' }}
             onClick={() => next && onVerseClick(next.verse)}
           >
             {next && (
