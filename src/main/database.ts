@@ -30,9 +30,7 @@ export const getVerse = (
   verse: number
 ): string | null => {
   const db = getDb(version)
-  const stmt = db.prepare(
-    'SELECT btext FROM Bible WHERE book = ? AND chapter = ? AND verse = ?'
-  )
+  const stmt = db.prepare('SELECT btext FROM Bible WHERE book = ? AND chapter = ? AND verse = ?')
   const row = stmt.get(book, chapter, verse) as { btext: string } | undefined
   return row?.btext ?? null
 }
@@ -51,17 +49,66 @@ export const getChapter = (
 }
 
 // 장의 마지막 절 번호 조회
-export const getMaxVerse = (
-  version: string,
-  book: number,
-  chapter: number
-): number => {
+export const getMaxVerse = (version: string, book: number, chapter: number): number => {
   const db = getDb(version)
-  const stmt = db.prepare(
-    'SELECT MAX(verse) as maxVerse FROM Bible WHERE book = ? AND chapter = ?'
-  )
+  const stmt = db.prepare('SELECT MAX(verse) as maxVerse FROM Bible WHERE book = ? AND chapter = ?')
   const row = stmt.get(book, chapter) as { maxVerse: number } | undefined
   return row?.maxVerse ?? 0
+}
+
+// 범위 내 구절 수 조회 (교독문 모드용)
+export const countVersesInRange = (
+  version: string,
+  startBook: number,
+  startChapter: number,
+  startVerse: number,
+  endBook: number,
+  endChapter: number,
+  endVerse: number
+): number => {
+  const db = getDb(version)
+
+  if (startBook === endBook && startChapter === endChapter) {
+    const stmt = db.prepare(
+      'SELECT COUNT(*) as count FROM Bible WHERE book = ? AND chapter = ? AND verse >= ? AND verse <= ?'
+    )
+    const row = stmt.get(startBook, startChapter, startVerse, endVerse) as { count: number }
+    return row.count
+  }
+
+  // 복잡한 범위: 절대 위치 비교
+  const stmt = db.prepare(
+    `SELECT COUNT(*) as count FROM Bible
+     WHERE (book * 1000000 + chapter * 1000 + verse) >= ?
+       AND (book * 1000000 + chapter * 1000 + verse) <= ?`
+  )
+  const startPos = startBook * 1000000 + startChapter * 1000 + startVerse
+  const endPos = endBook * 1000000 + endChapter * 1000 + endVerse
+  const row = stmt.get(startPos, endPos) as { count: number }
+  return row.count
+}
+
+// 범위 내 구절의 인덱스 조회 (교독문 모드용)
+export const getVerseIndexInRange = (
+  version: string,
+  bookNumber: number,
+  chapter: number,
+  verse: number,
+  startBook: number,
+  startChapter: number,
+  startVerse: number
+): number => {
+  const db = getDb(version)
+  const currentPos = bookNumber * 1000000 + chapter * 1000 + verse
+  const startPos = startBook * 1000000 + startChapter * 1000 + startVerse
+
+  const stmt = db.prepare(
+    `SELECT COUNT(*) as count FROM Bible
+     WHERE (book * 1000000 + chapter * 1000 + verse) >= ?
+       AND (book * 1000000 + chapter * 1000 + verse) < ?`
+  )
+  const row = stmt.get(startPos, currentPos) as { count: number }
+  return row.count
 }
 
 // 텍스트 검색 (범위 지정 + 페이지네이션 + 다중 키워드)

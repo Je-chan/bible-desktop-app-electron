@@ -19,6 +19,8 @@ interface BibleStore {
   viewMode: ViewMode
   chapterVerses: ChapterVerse[] | null
   scrollBehavior: ScrollBehavior
+  // 교독문 모드
+  isResponsiveReading: boolean
   // 역본 비교 관련
   isCompareOpen: boolean
   comparedVersion: string
@@ -31,6 +33,8 @@ interface BibleStore {
   setViewMode: (mode: ViewMode) => void
   toggleViewMode: () => void
   fetchChapter: (bookNumber: number, chapter: number) => Promise<void>
+  // 교독문 모드
+  toggleResponsiveReading: () => void
   // 역본 비교 관련
   setCompareOpen: (isOpen: boolean) => void
   setComparedVersion: (version: string) => void
@@ -72,6 +76,8 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   viewMode: 'verse',
   chapterVerses: null,
   scrollBehavior: 'instant',
+  // 교독문 모드
+  isResponsiveReading: false,
   // 역본 비교 관련
   isCompareOpen: false,
   comparedVersion: '개역한글',
@@ -95,7 +101,8 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
   toggleViewMode: () => {
     const { viewMode } = get()
-    const next: ViewMode = viewMode === 'verse' ? 'chapter' : viewMode === 'chapter' ? 'focus' : 'verse'
+    const next: ViewMode =
+      viewMode === 'verse' ? 'chapter' : viewMode === 'chapter' ? 'focus' : 'verse'
     set({ viewMode: next })
   },
 
@@ -104,6 +111,10 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
     const verses = await window.bibleApi.getChapter(currentVersion, bookNumber, chapter)
     set({ chapterVerses: verses })
   },
+
+  // 교독문 모드
+  toggleResponsiveReading: () =>
+    set((state) => ({ isResponsiveReading: !state.isResponsiveReading })),
 
   // 역본 비교 관련
   setCompareOpen: (isOpen) => set({ isCompareOpen: isOpen }),
@@ -132,7 +143,15 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   fetchVerse: async (bookName, bookNumber, chapter, verse, scrollBehavior = 'instant') => {
     set({ isLoading: true })
 
-    const { currentVersion, addToRecent, todayScriptureRange, isCompareOpen, fetchComparedVerse, viewMode, fetchChapter } = get()
+    const {
+      currentVersion,
+      addToRecent,
+      todayScriptureRange,
+      isCompareOpen,
+      fetchComparedVerse,
+      viewMode,
+      fetchChapter
+    } = get()
     const text = await window.bibleApi.getVerse(currentVersion, bookNumber, chapter, verse)
 
     if (text) {

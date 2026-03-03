@@ -26,9 +26,19 @@ const isInteractiveElementFocused = (): boolean => {
   const role = activeElement.getAttribute('role')
   if (role) {
     const interactiveRoles = [
-      'textbox', 'listbox', 'slider', 'spinbutton',
-      'combobox', 'option', 'menuitem', 'menu', 'menubar',
-      'tab', 'tablist', 'switch', 'searchbox'
+      'textbox',
+      'listbox',
+      'slider',
+      'spinbutton',
+      'combobox',
+      'option',
+      'menuitem',
+      'menu',
+      'menubar',
+      'tab',
+      'tablist',
+      'switch',
+      'searchbox'
     ]
     if (interactiveRoles.includes(role)) return true
   }
@@ -43,7 +53,12 @@ interface UseVersionSwitchProps {
   navigateVerse: (direction: 1 | -1) => Promise<void>
 }
 
-export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize, navigateVerse }: UseVersionSwitchProps) => {
+export const useVersionSwitch = ({
+  currentBookId,
+  setCurrentBookId,
+  setFontSize,
+  navigateVerse
+}: UseVersionSwitchProps) => {
   const {
     currentVerse,
     fetchVerse,
@@ -55,6 +70,8 @@ export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize,
     viewMode,
     toggleViewMode,
     fetchChapter,
+    // 교독문 모드
+    toggleResponsiveReading,
     // 역본 비교 관련
     isCompareOpen,
     setCompareOpen,
@@ -74,6 +91,13 @@ export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize,
             await fetchVerse(book.abbr, book.id, currentScripture.chapter, currentScripture.verse)
           }
         }
+        return
+      }
+
+      // Cmd/Ctrl + Shift + D: 교독문 모드 토글
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault()
+        toggleResponsiveReading()
         return
       }
 
@@ -146,7 +170,12 @@ export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize,
         if (currentVerse) {
           const currentBook = BIBLE_BOOKS.find((b) => b.id === currentBookId)
           if (currentBook) {
-            await fetchVerse(currentBook.abbr, currentBookId, currentVerse.chapter, currentVerse.verse)
+            await fetchVerse(
+              currentBook.abbr,
+              currentBookId,
+              currentVerse.chapter,
+              currentVerse.verse
+            )
           }
         }
         return
@@ -187,6 +216,7 @@ export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize,
     viewMode,
     toggleViewMode,
     fetchChapter,
+    toggleResponsiveReading,
     isCompareOpen,
     setCompareOpen,
     setComparedVersion,
