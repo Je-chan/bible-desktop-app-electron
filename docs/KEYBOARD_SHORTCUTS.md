@@ -37,9 +37,19 @@ const isInteractiveElementFocused = (): boolean => {
   const role = activeElement.getAttribute('role')
   if (role) {
     const interactiveRoles = [
-      'textbox', 'listbox', 'slider', 'spinbutton',
-      'combobox', 'option', 'menuitem', 'menu', 'menubar',
-      'tab', 'tablist', 'switch', 'searchbox'
+      'textbox',
+      'listbox',
+      'slider',
+      'spinbutton',
+      'combobox',
+      'option',
+      'menuitem',
+      'menu',
+      'menubar',
+      'tab',
+      'tablist',
+      'switch',
+      'searchbox'
     ]
     if (interactiveRoles.includes(role)) return true
   }
@@ -68,16 +78,16 @@ export const VERSION_MAP: Record<string, string> = {
   s: '새번역',
   // ...
   n: 'NIV2011',
-  k: 'NKJV',
+  k: 'NKJV'
 }
 ```
 
 ### 활용
 
-| 단축키 | 동작 |
-|--------|------|
-| `Alt + R` | 현재 역본을 개역한글로 변경 |
-| `Alt + Shift + R` | 비교 패널에 개역한글 표시 |
+| 단축키            | 동작                        |
+| ----------------- | --------------------------- |
+| `Alt + R`         | 현재 역본을 개역한글로 변경 |
+| `Alt + Shift + R` | 비교 패널에 개역한글 표시   |
 
 ```typescript
 // Alt + 알파벳: 현재 버전 변경

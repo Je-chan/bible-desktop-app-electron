@@ -20,7 +20,7 @@
 
 export const searchVerses = (
   version: string,
-  keywords: string[],  // ['사랑', '하나님', ''] → 빈 문자열 포함 가능
+  keywords: string[], // ['사랑', '하나님', ''] → 빈 문자열 포함 가능
   startBook: number = 1,
   endBook: number = 66,
   limit: number = 100,
@@ -49,6 +49,7 @@ export const searchVerses = (
 ```
 
 **예시**: 키워드가 `['사랑', '하나님']`이면:
+
 ```sql
 WHERE book >= 1 AND book <= 66
   AND btext LIKE '%사랑%' AND btext LIKE '%하나님%'
@@ -144,9 +145,9 @@ const highlightKeywords = (text: string, keywords: string[]) => {
 
 ```typescript
 const HIGHLIGHT_COLORS = [
-  'bg-amber-200',   // 키워드 1
+  'bg-amber-200', // 키워드 1
   'bg-emerald-200', // 키워드 2
-  'bg-sky-200'      // 키워드 3
+  'bg-sky-200' // 키워드 3
 ]
 ```
 
@@ -165,27 +166,35 @@ const [hasMore, setHasMore] = useState(true)
 const LIMIT = 100
 
 // 스크롤 이벤트
-const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-  const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+const handleScroll = useCallback(
+  (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
 
-  // 바닥에서 100px 이내면 다음 페이지 로드
-  if (scrollHeight - scrollTop - clientHeight < 100 && hasMore && !isLoading) {
-    loadMore()
-  }
-}, [hasMore, isLoading])
+    // 바닥에서 100px 이내면 다음 페이지 로드
+    if (scrollHeight - scrollTop - clientHeight < 100 && hasMore && !isLoading) {
+      loadMore()
+    }
+  },
+  [hasMore, isLoading]
+)
 
 // 추가 로드
 const loadMore = async () => {
   const newResults = await window.bibleApi.search(
-    version, keywords, startBook, endBook, LIMIT, offset
+    version,
+    keywords,
+    startBook,
+    endBook,
+    LIMIT,
+    offset
   )
 
   if (newResults.length < LIMIT) {
-    setHasMore(false)  // 더 이상 결과 없음
+    setHasMore(false) // 더 이상 결과 없음
   }
 
-  setResults(prev => [...prev, ...newResults])
-  setOffset(prev => prev + LIMIT)
+  setResults((prev) => [...prev, ...newResults])
+  setOffset((prev) => prev + LIMIT)
 }
 ```
 
@@ -213,16 +222,16 @@ SELECT 대신 INPUT + datalist로 빠른 입력을 지원합니다:
 ### 유효성 검사
 
 ```typescript
-const startBook = BIBLE_BOOKS.find(b => b.abbr === startBookAbbr)
-const endBook = BIBLE_BOOKS.find(b => b.abbr === endBookAbbr)
+const startBook = BIBLE_BOOKS.find((b) => b.abbr === startBookAbbr)
+const endBook = BIBLE_BOOKS.find((b) => b.abbr === endBookAbbr)
 
 // 없으면 기본값 사용
-const startId = startBook?.id ?? 1   // 창세기
-const endId = endBook?.id ?? 66      // 요한계시록
+const startId = startBook?.id ?? 1 // 창세기
+const endId = endBook?.id ?? 66 // 요한계시록
 
 // 순서 보정
 if (startId > endId) {
-  [startId, endId] = [endId, startId]
+  ;[startId, endId] = [endId, startId]
 }
 ```
 

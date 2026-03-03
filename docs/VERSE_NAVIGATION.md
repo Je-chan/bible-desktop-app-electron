@@ -7,13 +7,13 @@
 
 ## 경계 조건
 
-| 상황 | 동작 |
-|------|------|
-| 요한복음 3:16 → | 요한복음 3:17 |
-| 요한복음 3:36 (마지막 절) → | 요한복음 4:1 |
-| 요한복음 21:25 (마지막 장 마지막 절) → | 사도행전 1:1 |
-| 요한계시록 22:21 (성경 마지막) → | 이동 안함 |
-| 창세기 1:1 (성경 처음) ← | 이동 안함 |
+| 상황                                   | 동작          |
+| -------------------------------------- | ------------- |
+| 요한복음 3:16 →                        | 요한복음 3:17 |
+| 요한복음 3:36 (마지막 절) →            | 요한복음 4:1  |
+| 요한복음 21:25 (마지막 장 마지막 절) → | 사도행전 1:1  |
+| 요한계시록 22:21 (성경 마지막) →       | 이동 안함     |
+| 창세기 1:1 (성경 처음) ←               | 이동 안함     |
 
 ## 구현
 
@@ -52,9 +52,7 @@ const navigateNext = async (chapter: number, verse: number) => {
   if (!currentBook) return
 
   // 1. 현재 장의 최대 절 확인
-  const maxVerseResult = await window.bibleApi.getMaxVerse(
-    currentVersion, currentBookId, chapter
-  )
+  const maxVerseResult = await window.bibleApi.getMaxVerse(currentVersion, currentBookId, chapter)
   const maxVerse = maxVerseResult?.maxVerse ?? 0
 
   // 2. 아직 절이 남았으면 다음 절로
@@ -96,14 +94,11 @@ const navigatePrev = async (chapter: number, verse: number) => {
   // 2. 첫 절이면 이전 장의 마지막 절로
   if (chapter > 1) {
     const prevMaxVerse = await window.bibleApi.getMaxVerse(
-      currentVersion, currentBookId, chapter - 1
-    )
-    await fetchVerse(
-      currentBook.abbr,
+      currentVersion,
       currentBookId,
-      chapter - 1,
-      prevMaxVerse?.maxVerse ?? 1
+      chapter - 1
     )
+    await fetchVerse(currentBook.abbr, currentBookId, chapter - 1, prevMaxVerse?.maxVerse ?? 1)
     return
   }
 
@@ -112,14 +107,11 @@ const navigatePrev = async (chapter: number, verse: number) => {
   if (prevBook) {
     setCurrentBookId(prevBook.id)
     const prevMaxVerse = await window.bibleApi.getMaxVerse(
-      currentVersion, prevBook.id, prevBook.chapters
-    )
-    await fetchVerse(
-      prevBook.abbr,
+      currentVersion,
       prevBook.id,
-      prevBook.chapters,
-      prevMaxVerse?.maxVerse ?? 1
+      prevBook.chapters
     )
+    await fetchVerse(prevBook.abbr, prevBook.id, prevBook.chapters, prevMaxVerse?.maxVerse ?? 1)
   }
 
   // 4. 창세기 첫 절이면 아무것도 안함
@@ -138,6 +130,7 @@ const navigatePrev = async (chapter: number, verse: number) => {
 ### 절 수는 동적 데이터
 
 각 장마다 절 수가 다릅니다:
+
 - 시편 117편: 2절
 - 시편 119편: 176절
 
@@ -156,9 +149,7 @@ set({ currentVerse: data })
 
 // 비교 패널이 열려 있으면 같이 fetch
 if (get().isCompareOpen) {
-  const comparedData = await window.bibleApi.getVerse(
-    get().comparedVersion, bookId, chapter, verse
-  )
+  const comparedData = await window.bibleApi.getVerse(get().comparedVersion, bookId, chapter, verse)
   set({ comparedVerse: comparedData })
 }
 ```

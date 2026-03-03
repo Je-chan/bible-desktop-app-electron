@@ -23,40 +23,43 @@ import { BIBLE_BOOKS } from '../config'
 const findBook = (abbr: string) => BIBLE_BOOKS.find((b) => b.abbr === abbr)
 
 // 단일 위치 스키마
-const versePositionSchema = z.object({
-  bookAbbr: z.string().refine(
-    (abbr) => findBook(abbr) !== undefined,
-    { message: '유효하지 않은 책입니다' }
-  ),
-  chapter: z.number().int().positive(),
-  verse: z.number().int().positive()
-}).refine(
-  // 장 범위 검증
-  (data) => {
-    const book = findBook(data.bookAbbr)
-    return book ? data.chapter <= book.chapters : false
-  },
-  { message: '장 번호가 범위를 벗어났습니다', path: ['chapter'] }
-)
+const versePositionSchema = z
+  .object({
+    bookAbbr: z
+      .string()
+      .refine((abbr) => findBook(abbr) !== undefined, { message: '유효하지 않은 책입니다' }),
+    chapter: z.number().int().positive(),
+    verse: z.number().int().positive()
+  })
+  .refine(
+    // 장 범위 검증
+    (data) => {
+      const book = findBook(data.bookAbbr)
+      return book ? data.chapter <= book.chapters : false
+    },
+    { message: '장 번호가 범위를 벗어났습니다', path: ['chapter'] }
+  )
 
 // 범위 스키마
-export const scriptureRangeSchema = z.object({
-  start: versePositionSchema,
-  end: versePositionSchema
-}).refine(
-  // 끝이 시작보다 앞서면 안됨
-  (data) => {
-    const startBook = findBook(data.start.bookAbbr)
-    const endBook = findBook(data.end.bookAbbr)
-    if (!startBook || !endBook) return false
+export const scriptureRangeSchema = z
+  .object({
+    start: versePositionSchema,
+    end: versePositionSchema
+  })
+  .refine(
+    // 끝이 시작보다 앞서면 안됨
+    (data) => {
+      const startBook = findBook(data.start.bookAbbr)
+      const endBook = findBook(data.end.bookAbbr)
+      if (!startBook || !endBook) return false
 
-    const startPos = startBook.id * 1000000 + data.start.chapter * 1000 + data.start.verse
-    const endPos = endBook.id * 1000000 + data.end.chapter * 1000 + data.end.verse
+      const startPos = startBook.id * 1000000 + data.start.chapter * 1000 + data.start.verse
+      const endPos = endBook.id * 1000000 + data.end.chapter * 1000 + data.end.verse
 
-    return endPos >= startPos
-  },
-  { message: '끝 위치가 시작 위치보다 앞설 수 없습니다', path: ['end'] }
-)
+      return endPos >= startPos
+    },
+    { message: '끝 위치가 시작 위치보다 앞설 수 없습니다', path: ['end'] }
+  )
 ```
 
 ## 비동기 검증: 절 최대값
@@ -164,11 +167,13 @@ Zod 검증 (동기)
 ## 에러 표시 UX
 
 ```tsx
-{error && (
-  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-    <p className="text-sm text-red-600">{error}</p>
-  </div>
-)}
+{
+  error && (
+    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+      <p className="text-sm text-red-600">{error}</p>
+    </div>
+  )
+}
 ```
 
 에러는 모달 하단에 빨간 박스로 표시되며, 입력을 수정하면 자동으로 사라집니다.

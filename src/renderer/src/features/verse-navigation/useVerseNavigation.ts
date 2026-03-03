@@ -1,7 +1,10 @@
 import { BIBLE_BOOKS } from '../../shared/config'
 import { useBibleStore } from '../../store/useBibleStore'
 
-export const useVerseNavigation = (currentBookId: number, setCurrentBookId: (id: number) => void) => {
+export const useVerseNavigation = (
+  currentBookId: number,
+  setCurrentBookId: (id: number) => void
+) => {
   const { currentVerse, fetchVerse, currentVersion } = useBibleStore()
 
   const navigateVerse = async (direction: 1 | -1) => {
@@ -15,7 +18,11 @@ export const useVerseNavigation = (currentBookId: number, setCurrentBookId: (id:
     let newVerse = currentVerse.verse + direction
 
     if (direction === 1) {
-      const maxVerse = await window.bibleApi.getMaxVerse(currentVersion, currentBookId, currentVerse.chapter)
+      const maxVerse = await window.bibleApi.getMaxVerse(
+        currentVersion,
+        currentBookId,
+        currentVerse.chapter
+      )
 
       if (newVerse > maxVerse) {
         newChapter++
@@ -57,7 +64,13 @@ export const useVerseNavigation = (currentBookId: number, setCurrentBookId: (id:
     const newBook = BIBLE_BOOKS.find((b) => b.id === newBookId)
     if (newBook) {
       setCurrentBookId(newBookId)
-      await fetchVerse(newBook.abbr, newBookId, newChapter, newVerse, chapterChanged ? 'instant' : 'smooth')
+      await fetchVerse(
+        newBook.abbr,
+        newBookId,
+        newChapter,
+        newVerse,
+        chapterChanged ? 'instant' : 'smooth'
+      )
     }
   }
 

@@ -26,9 +26,20 @@ export const VersionComparePanel = ({
 
   return (
     <div className="flex-1 flex flex-col border-l border-slate-300">
-      <main className="flex-1 flex items-start justify-start px-8" style={{ overflow: 'overlay' as any }}>
+      <main
+        className="flex-1 flex items-start justify-start px-8"
+        style={{ overflow: 'overlay' as any }}
+      >
         {comparedVerse ? (
-          <div className="w-full" style={{ paddingLeft: paddingX, paddingRight: paddingX, paddingTop: paddingY, paddingBottom: paddingY }}>
+          <div
+            className="w-full"
+            style={{
+              paddingLeft: paddingX,
+              paddingRight: paddingX,
+              paddingTop: paddingY,
+              paddingBottom: paddingY
+            }}
+          >
             <p
               className="leading-relaxed"
               style={{ fontSize: `${fontSize}px`, fontFamily, color: fontColor }}
@@ -38,9 +49,7 @@ export const VersionComparePanel = ({
             </p>
           </div>
         ) : (
-          <div className="text-slate-400 text-lg italic">
-            구절을 불러오는 중...
-          </div>
+          <div className="text-slate-400 text-lg italic">구절을 불러오는 중...</div>
         )}
       </main>
     </div>

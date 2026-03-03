@@ -145,7 +145,14 @@ export const SearchPanel = ({ isOpen, onClose, onSelectVerse }: SearchPanelProps
 
     try {
       const [searchResults, count] = await Promise.all([
-        window.bibleApi.search(selectedVersion, validKeywords, startBookId, endBookId, PAGE_SIZE, 0),
+        window.bibleApi.search(
+          selectedVersion,
+          validKeywords,
+          startBookId,
+          endBookId,
+          PAGE_SIZE,
+          0
+        ),
         window.bibleApi.searchCount(selectedVersion, validKeywords, startBookId, endBookId)
       ])
       setResults(searchResults)
@@ -191,7 +198,16 @@ export const SearchPanel = ({ isOpen, onClose, onSelectVerse }: SearchPanelProps
     } finally {
       setIsLoadingMore(false)
     }
-  }, [isLoadingMore, results.length, totalCount, selectedVersion, searchedKeywords, startBookAbbr, endBookAbbr, offset])
+  }, [
+    isLoadingMore,
+    results.length,
+    totalCount,
+    selectedVersion,
+    searchedKeywords,
+    startBookAbbr,
+    endBookAbbr,
+    offset
+  ])
 
   // 무한 스크롤
   useEffect(() => {
@@ -309,7 +325,10 @@ export const SearchPanel = ({ isOpen, onClose, onSelectVerse }: SearchPanelProps
   if (!isOpen) return null
 
   return (
-    <div ref={panelRef} className="flex-1 flex flex-col border-l border-slate-300 bg-white max-w-md">
+    <div
+      ref={panelRef}
+      className="flex-1 flex flex-col border-l border-slate-300 bg-white max-w-md"
+    >
       {/* 헤더 */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
