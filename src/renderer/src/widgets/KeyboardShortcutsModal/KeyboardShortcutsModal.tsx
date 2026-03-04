@@ -22,7 +22,8 @@ const shortcuts = [
     category: '화면 조절',
     items: [
       { key: '↑', description: '글자 크기 증가' },
-      { key: '↓', description: '글자 크기 감소' }
+      { key: '↓', description: '글자 크기 감소' },
+      { key: 'Cmd/Ctrl + Shift + R', description: '보기 모드 전환 (절/장/포커스)' }
     ]
   },
   {
