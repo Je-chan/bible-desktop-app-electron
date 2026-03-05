@@ -9,7 +9,6 @@ import { BIBLE_BOOKS } from './shared/config'
 import { Header } from './widgets/Header'
 import { VerseContent } from './widgets/VerseContent'
 import { ChapterContent } from './widgets/ChapterContent'
-import { FocusContent } from './widgets/FocusContent'
 import { Footer } from './widgets/Footer'
 import { SettingsModal } from './widgets/SettingsModal'
 import { ScriptureRangeModal } from './widgets/ScriptureRangeModal'
@@ -140,13 +139,13 @@ function App() {
 
   // 보기 모드 변경 핸들러
   const handleViewModeChange = useCallback(
-    async (mode: 'verse' | 'chapter' | 'focus') => {
+    async (mode: 'verse' | 'chapter') => {
       setViewMode(mode)
       // 설정에 저장
       updateSettings({ viewMode: mode })
       window.settingsApi.set({ viewMode: mode })
-      // verse → chapter/focus 전환 시 장 데이터 fetch
-      if (mode !== 'verse' && !chapterVerses && currentVerse) {
+      // verse → chapter 전환 시 장 데이터 fetch
+      if (mode === 'chapter' && !chapterVerses && currentVerse) {
         const book = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
         if (book) {
           await fetchChapter(book.id, currentVerse.chapter)
@@ -312,27 +311,7 @@ function App() {
       <div className="flex-1 flex min-h-0">
         {/* 왼쪽: 현재 구절 / 장 보기 */}
         <div className={`flex flex-col ${isCompareOpen || showSearch ? 'flex-1' : 'w-full'}`}>
-          {viewMode === 'focus' ? (
-            <FocusContent
-              currentVerse={currentVerse}
-              chapterVerses={chapterVerses}
-              fontSize={settings.fontSize}
-              fontFamily={settings.fontFamily}
-              fontColor={settings.fontColor}
-              paddingX={settings.paddingX}
-              paddingY={settings.paddingY}
-              onVerseClick={(verse) => {
-                if (currentVerse) {
-                  const book = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
-                  if (book) {
-                    fetchVerse(currentVerse.book, book.id, currentVerse.chapter, verse)
-                  }
-                }
-              }}
-              verseRoles={verseRoles}
-              responsiveColors={responsiveColors}
-            />
-          ) : viewMode === 'chapter' ? (
+          {viewMode === 'chapter' ? (
             <ChapterContent
               currentVerse={currentVerse}
               chapterVerses={chapterVerses}

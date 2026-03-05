@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { SearchResult, ScriptureRange } from '../types/bible'
 
-type ViewMode = 'verse' | 'chapter' | 'focus'
+type ViewMode = 'verse' | 'chapter'
 
 interface ChapterVerse {
   verse: number
@@ -101,8 +101,7 @@ export const useBibleStore = create<BibleStore>((set, get) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
   toggleViewMode: () => {
     const { viewMode } = get()
-    const next: ViewMode =
-      viewMode === 'verse' ? 'chapter' : viewMode === 'chapter' ? 'focus' : 'verse'
+    const next: ViewMode = viewMode === 'verse' ? 'chapter' : 'verse'
     set({ viewMode: next })
   },
 

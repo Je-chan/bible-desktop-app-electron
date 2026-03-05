@@ -101,11 +101,11 @@ export const useVersionSwitch = ({
         return
       }
 
-      // Cmd/Ctrl + Shift + R: 보기 모드 전환 (절/장/포커스)
+      // Cmd/Ctrl + Shift + R: 보기 모드 전환 (절/장)
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
         e.preventDefault()
         toggleViewMode()
-        // verse → chapter 전환 시 장 데이터 fetch (chapter → focus는 이미 로드됨)
+        // verse → chapter 전환 시 장 데이터 fetch
         if (viewMode === 'verse' && currentVerse) {
           const currentBook = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
           if (currentBook) {

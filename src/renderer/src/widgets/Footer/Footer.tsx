@@ -6,8 +6,7 @@ import {
   Maximize2,
   Minimize2,
   Type,
-  AlignJustify,
-  Focus
+  AlignJustify
 } from 'lucide-react'
 import { VERSION_MAP } from '../../shared/config'
 
@@ -35,8 +34,8 @@ interface FooterProps {
   currentScripture?: string | null
   isKiosk: boolean
   onToggleKiosk: () => void
-  viewMode: 'verse' | 'chapter' | 'focus'
-  onViewModeChange: (mode: 'verse' | 'chapter' | 'focus') => void
+  viewMode: 'verse' | 'chapter'
+  onViewModeChange: (mode: 'verse' | 'chapter') => void
 }
 
 export const Footer = ({
@@ -332,8 +331,7 @@ export const Footer = ({
         >
           {[
             { mode: 'verse' as const, icon: Type, label: '절 보기' },
-            { mode: 'chapter' as const, icon: AlignJustify, label: '장 보기' },
-            { mode: 'focus' as const, icon: Focus, label: '포커스 보기' }
+            { mode: 'chapter' as const, icon: AlignJustify, label: '장 보기' }
           ].map(({ mode, icon: Icon, label }) => (
             <button
               key={mode}

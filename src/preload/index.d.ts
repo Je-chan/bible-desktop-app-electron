@@ -64,7 +64,7 @@ interface Settings {
   headerFontSize: number
   headerPaddingY: number
   headerAlign: 'left' | 'center' | 'right'
-  viewMode: 'verse' | 'chapter' | 'focus'
+  viewMode: 'verse' | 'chapter'
   responsiveReadingColors: { leader: string; congregation: string; unison: string }
 }
 
