@@ -30,6 +30,8 @@ interface Settings {
   paddingX: number
   paddingY: number
   headerFontSize: number
+  headerPaddingY: number
+  headerAlign: 'left' | 'center' | 'right'
 }
 
 interface SettingsApi {

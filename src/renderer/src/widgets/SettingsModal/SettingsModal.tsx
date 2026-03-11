@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { X, ChevronDown, Check, Search, Minus, Plus } from 'lucide-react'
+import { X, ChevronDown, Check, Search, Minus, Plus, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -10,6 +10,8 @@ interface SettingsModalProps {
   paddingX: number
   paddingY: number
   headerFontSize: number
+  headerPaddingY: number
+  headerAlign: 'left' | 'center' | 'right'
   systemFonts: string[]
   onBackgroundColorChange: (color: string) => void
   onFontFamilyChange: (font: string) => void
@@ -18,6 +20,8 @@ interface SettingsModalProps {
   onPaddingXChange: (padding: number) => void
   onPaddingYChange: (padding: number) => void
   onHeaderFontSizeChange: (size: number) => void
+  onHeaderPaddingYChange: (padding: number) => void
+  onHeaderAlignChange: (align: 'left' | 'center' | 'right') => void
   onSave: () => void
   onClose: () => void
 }
@@ -223,6 +227,8 @@ export const SettingsModal = ({
   paddingX,
   paddingY,
   headerFontSize,
+  headerPaddingY,
+  headerAlign,
   systemFonts,
   onBackgroundColorChange,
   onFontFamilyChange,
@@ -231,6 +237,8 @@ export const SettingsModal = ({
   onPaddingXChange,
   onPaddingYChange,
   onHeaderFontSizeChange,
+  onHeaderPaddingYChange,
+  onHeaderAlignChange,
   onSave,
   onClose
 }: SettingsModalProps) => {
@@ -470,6 +478,47 @@ export const SettingsModal = ({
           {/* 레이아웃 탭 */}
           {activeTab === 'layout' && (
             <div className="space-y-5">
+              {/* 타이틀 영역 */}
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">타이틀 영역</p>
+
+              <NumberStepper
+                label="상하 여백"
+                value={headerPaddingY}
+                min={0}
+                max={60}
+                step={2}
+                onChange={onHeaderPaddingYChange}
+              />
+
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-slate-600">정렬</label>
+                <div className="flex items-center gap-1">
+                  {([
+                    { value: 'left' as const, icon: AlignLeft, label: '왼쪽' },
+                    { value: 'center' as const, icon: AlignCenter, label: '가운데' },
+                    { value: 'right' as const, icon: AlignRight, label: '오른쪽' }
+                  ]).map(({ value, icon: Icon, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => onHeaderAlignChange(value)}
+                      className={`w-9 h-8 flex items-center justify-center rounded-lg border transition-colors ${
+                        headerAlign === value
+                          ? 'border-blue-400 bg-blue-50 text-blue-600'
+                          : 'border-slate-200 hover:bg-slate-100 text-slate-500'
+                      }`}
+                      title={label}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100" />
+
+              {/* 본문 영역 */}
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">본문 영역</p>
+
               <NumberStepper
                 label="좌우 여백"
                 value={paddingX}
@@ -478,8 +527,6 @@ export const SettingsModal = ({
                 step={4}
                 onChange={onPaddingXChange}
               />
-
-              <div className="h-px bg-slate-100" />
 
               <NumberStepper
                 label="상하 여백"
@@ -495,18 +542,31 @@ export const SettingsModal = ({
                 <p className="text-xs text-slate-400 mb-2">미리보기</p>
                 <div
                   className="bg-white rounded border border-slate-200 overflow-hidden"
-                  style={{ height: 80 }}
                 >
+                  {/* 타이틀 영역 미리보기 */}
                   <div
-                    className="h-full flex items-center justify-center text-xs text-slate-500"
+                    className={`flex items-center border-b border-slate-200 border-dashed text-xs text-slate-400 px-2 ${
+                      headerAlign === 'left' ? 'justify-start' : headerAlign === 'right' ? 'justify-end' : 'justify-center'
+                    }`}
+                    style={{
+                      paddingTop: Math.min(headerPaddingY * 0.3, 20),
+                      paddingBottom: Math.min(headerPaddingY * 0.3, 20)
+                    }}
+                  >
+                    타이틀 영역
+                  </div>
+                  {/* 본문 영역 미리보기 */}
+                  <div
+                    className="flex items-center justify-center text-xs text-slate-500"
                     style={{
                       paddingLeft: Math.min(paddingX * 0.3, 60),
                       paddingRight: Math.min(paddingX * 0.3, 60),
                       paddingTop: Math.min(paddingY * 0.3, 30),
-                      paddingBottom: Math.min(paddingY * 0.3, 30)
+                      paddingBottom: Math.min(paddingY * 0.3, 30),
+                      minHeight: 50
                     }}
                   >
-                    <div className="w-full h-full bg-blue-50 border border-blue-200 border-dashed rounded flex items-center justify-center">
+                    <div className="w-full h-full min-h-[30px] bg-blue-50 border border-blue-200 border-dashed rounded flex items-center justify-center">
                       본문 영역
                     </div>
                   </div>
