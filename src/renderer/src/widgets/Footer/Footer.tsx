@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { Settings, BookOpen, Info, Maximize2, Minimize2 } from 'lucide-react'
+import { Settings, BookOpen, Info, Maximize2, Minimize2, Type, AlignJustify, Focus } from 'lucide-react'
 import { VERSION_MAP } from '../../shared/config'
 
 // 버전 단축키 목록 (버전명 기준 정렬)
@@ -24,6 +24,10 @@ interface FooterProps {
   onScriptureRangeClick: () => void
   onKeyboardShortcutsClick: () => void
   currentScripture?: string | null
+  isKiosk: boolean
+  onToggleKiosk: () => void
+  viewMode: 'verse' | 'chapter' | 'focus'
+  onViewModeChange: (mode: 'verse' | 'chapter' | 'focus') => void
 }
 
 export const Footer = ({
@@ -40,10 +44,13 @@ export const Footer = ({
   onSettingsClick,
   onScriptureRangeClick,
   onKeyboardShortcutsClick,
-  currentScripture
+  currentScripture,
+  isKiosk,
+  onToggleKiosk,
+  viewMode,
+  onViewModeChange
 }: FooterProps) => {
   const [activeField, setActiveField] = useState<FieldType>('book')
-  const [isKiosk, setIsKiosk] = useState(true)
 
   // 각 필드 위치를 추적하기 위한 refs
   const bookDivRef = useRef<HTMLDivElement>(null)
@@ -97,17 +104,6 @@ export const Footer = ({
     setRenderTrigger(1)
   }, [])
 
-  // 초기 Kiosk 상태 확인
-  useEffect(() => {
-    window.windowApi.isKiosk().then(setIsKiosk)
-  }, [])
-
-  // Kiosk 모드 토글
-  const handleToggleKiosk = useCallback(async () => {
-    const newState = await window.windowApi.toggleKiosk()
-    setIsKiosk(newState)
-  }, [])
-
   // 윈도우 리사이즈 시 리렌더링 트리거
   useEffect(() => {
     const handleResize = () => setRenderTrigger((prev) => prev + 1)
@@ -144,6 +140,8 @@ export const Footer = ({
   // 키보드 핸들러
   const handleKeyDown = useCallback(
     async (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.nativeEvent.isComposing || e.keyCode === 229) return
+
       if (e.key === 'Tab') {
         e.preventDefault() // 기본 Tab 동작 막기 (Blur 방지!)
 
@@ -307,6 +305,34 @@ export const Footer = ({
       </div>
 
       <div className="flex items-center gap-3">
+        {/* 보기 모드 전환 */}
+        <div
+          className="flex items-center rounded-md border"
+          style={{ borderColor: fontColor + '20' }}
+        >
+          {([
+            { mode: 'verse' as const, icon: Type, label: '절 보기' },
+            { mode: 'chapter' as const, icon: AlignJustify, label: '장 보기' },
+            { mode: 'focus' as const, icon: Focus, label: '포커스 보기' }
+          ]).map(({ mode, icon: Icon, label }) => (
+            <button
+              key={mode}
+              onClick={() => onViewModeChange(mode)}
+              className="p-1 transition-colors first:rounded-l-md last:rounded-r-md"
+              style={{
+                color: fontColor,
+                opacity: viewMode === mode ? 1 : 0.35,
+                backgroundColor: viewMode === mode ? fontColor + '15' : 'transparent'
+              }}
+              tabIndex={-1}
+              aria-label={label}
+              title={label}
+            >
+              <Icon className="w-3.5 h-3.5" />
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={onScriptureRangeClick}
           className="flex items-center gap-1 text-xs transition-colors hover:opacity-100"
@@ -328,7 +354,7 @@ export const Footer = ({
           <Info className="w-4 h-4" />
         </button>
         <button
-          onClick={handleToggleKiosk}
+          onClick={onToggleKiosk}
           className="p-1 transition-colors hover:opacity-80"
           style={{ color: fontColor }}
           tabIndex={-1}

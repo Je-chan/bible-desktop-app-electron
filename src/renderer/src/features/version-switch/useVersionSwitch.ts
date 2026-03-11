@@ -51,6 +51,10 @@ export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize,
     setCurrentVersion,
     currentScripture,
     todayScriptureRange,
+    // 보기 모드
+    viewMode,
+    toggleViewMode,
+    fetchChapter,
     // 역본 비교 관련
     isCompareOpen,
     setCompareOpen,
@@ -68,6 +72,20 @@ export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize,
           if (book) {
             setCurrentBookId(book.id) // 화살표 이동을 위해 currentBookId도 업데이트
             await fetchVerse(book.abbr, book.id, currentScripture.chapter, currentScripture.verse)
+          }
+        }
+        return
+      }
+
+      // Cmd/Ctrl + Shift + R: 보기 모드 전환 (절/장/포커스)
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault()
+        toggleViewMode()
+        // verse → chapter 전환 시 장 데이터 fetch (chapter → focus는 이미 로드됨)
+        if (viewMode === 'verse' && currentVerse) {
+          const currentBook = BIBLE_BOOKS.find((b) => b.abbr === currentVerse.book)
+          if (currentBook) {
+            await fetchChapter(currentBook.id, currentVerse.chapter)
           }
         }
         return
@@ -166,6 +184,9 @@ export const useVersionSwitch = ({ currentBookId, setCurrentBookId, setFontSize,
     setCurrentVersion,
     currentScripture,
     todayScriptureRange,
+    viewMode,
+    toggleViewMode,
+    fetchChapter,
     isCompareOpen,
     setCompareOpen,
     setComparedVersion,

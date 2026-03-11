@@ -12,7 +12,7 @@ interface VerseContentProps {
 
 export const VerseContent = ({ currentVerse, fontSize, fontFamily, fontColor, paddingX, paddingY }: VerseContentProps) => {
   return (
-    <main className="flex-1 flex items-start justify-start px-8 overflow-auto">
+    <main className="flex-1 flex items-start justify-start px-8" style={{ overflow: 'overlay' as any }}>
       {currentVerse ? (
         <div className="w-full" style={{ paddingLeft: paddingX, paddingRight: paddingX, paddingTop: paddingY, paddingBottom: paddingY }}>
           <p

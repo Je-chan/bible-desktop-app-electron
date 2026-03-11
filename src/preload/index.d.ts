@@ -51,6 +51,7 @@ interface ImeApi {
 interface WindowApi {
   isKiosk: () => Promise<boolean>
   toggleKiosk: () => Promise<boolean>
+  setKiosk: (value: boolean) => Promise<boolean>
 }
 
 declare global {
